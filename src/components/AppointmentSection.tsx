@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { CalendarDays, CheckCircle2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const services = [
   "Skin Treatment",
@@ -12,14 +13,20 @@ const services = [
   "Cosmetic Procedures",
 ];
 
+const locations = [
+  { value: "Noida", label: "Noida" },
+];
+
 const AppointmentSection = () => {
   const sectionRef = useScrollReveal<HTMLElement>();
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
     service: "",
+    location: "",
     date: "",
     time: "",
     message: "",
@@ -29,14 +36,33 @@ const AppointmentSection = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.phone.trim() || !formData.service) {
+    if (!formData.name.trim() || !formData.phone.trim() || !formData.service || !formData.location) {
       toast.error("Please fill in all required fields.");
       return;
     }
-    setSubmitted(true);
-    toast.success("Appointment request submitted! We'll contact you shortly.");
+    setLoading(true);
+    try {
+      const { error } = await supabase.from("appointments").insert({
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim() || null,
+        service: formData.service,
+        location: formData.location,
+        preferred_date: formData.date || null,
+        preferred_time: formData.time || null,
+        message: formData.message.trim() || null,
+      });
+      if (error) throw error;
+      setSubmitted(true);
+      toast.success("Appointment request submitted! We'll contact you shortly.");
+    } catch (err) {
+      console.error("Appointment submission error:", err);
+      toast.error("Something went wrong. Please try again or book via WhatsApp.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -47,10 +73,10 @@ const AppointmentSection = () => {
             <CheckCircle2 size={56} className="mx-auto text-primary mb-6" />
             <h3 className="heading-display text-2xl mb-3">Booking Confirmed!</h3>
             <p className="text-body mb-8">
-              Thank you, {formData.name}! We've received your appointment request for <strong>{formData.service}</strong>. 
+              Thank you, {formData.name}! We've received your appointment request for <strong>{formData.service}</strong> at <strong>{formData.location}</strong>.
               Our team will reach out within 24 hours to confirm your visit.
             </p>
-            <button onClick={() => setSubmitted(false)} className="btn-primary">
+            <button onClick={() => { setSubmitted(false); setFormData({ name: "", phone: "", email: "", service: "", location: "", date: "", time: "", message: "" }); }} className="btn-primary">
               Book Another
             </button>
           </div>
@@ -70,7 +96,7 @@ const AppointmentSection = () => {
               Schedule Your Consultation
             </h2>
             <p className="text-body mb-8 max-w-md">
-              Take the first step toward healthier, more radiant skin. Book your appointment 
+              Take the first step toward healthier, more radiant skin. Book your appointment
               today and let our experts craft the perfect treatment plan for you.
             </p>
 
@@ -80,6 +106,13 @@ const AppointmentSection = () => {
                 <div>
                   <p className="font-body font-semibold text-foreground text-sm">Mon – Sat: 10:00 AM – 7:00 PM</p>
                   <p className="font-body text-sm text-muted-foreground">Sunday by appointment only</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <MapPin className="text-primary" size={24} />
+                <div>
+                  <p className="font-body font-semibold text-foreground text-sm">Noida Clinic</p>
+                  <p className="font-body text-sm text-muted-foreground">Sector 18, Noida, UP</p>
                 </div>
               </div>
             </div>
@@ -143,20 +176,37 @@ const AppointmentSection = () => {
               />
             </div>
 
-            <div className="mb-4">
-              <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Service *</label>
-              <select
-                name="service"
-                required
-                value={formData.service}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
-              >
-                <option value="">Select a service</option>
-                {services.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+            <div className="grid sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Service *</label>
+                <select
+                  name="service"
+                  required
+                  value={formData.service}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                >
+                  <option value="">Select a service</option>
+                  {services.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Location *</label>
+                <select
+                  name="location"
+                  required
+                  value={formData.location}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                >
+                  <option value="">Select location</option>
+                  {locations.map((loc) => (
+                    <option key={loc.value} value={loc.value}>{loc.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-4">
@@ -195,8 +245,8 @@ const AppointmentSection = () => {
               />
             </div>
 
-            <button type="submit" className="btn-primary w-full text-center">
-              Submit Appointment Request
+            <button type="submit" disabled={loading} className="btn-primary w-full text-center disabled:opacity-60">
+              {loading ? "Submitting..." : "Submit Appointment Request"}
             </button>
           </form>
         </div>
