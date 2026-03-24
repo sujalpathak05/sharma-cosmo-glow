@@ -34,7 +34,7 @@ const Navbar = () => {
         </a>
 
         {/* Desktop nav */}
-        <ul className="hidden lg:flex items-center gap-8">
+        <ul className="hidden xl:flex items-center gap-6">
           {navLinks.map((link) => (
             <li key={link.href}>
               <a
@@ -47,7 +47,7 @@ const Navbar = () => {
           ))}
         </ul>
 
-        <div className="hidden lg:flex items-center gap-4">
+        <div className="hidden xl:flex items-center gap-4">
           <a href="tel:+919876543210" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <Phone size={16} />
             +91 98765 43210
@@ -60,7 +60,7 @@ const Navbar = () => {
         {/* Mobile toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="lg:hidden p-2 text-foreground active:scale-95 transition-transform"
+          className="xl:hidden p-2 text-foreground active:scale-95 transition-transform"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -69,7 +69,7 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="lg:hidden bg-card/98 backdrop-blur-lg border-t border-border animate-fade-in">
+        <div className="xl:hidden bg-card/98 backdrop-blur-lg border-t border-border animate-fade-in">
           <div className="section-padding py-6 flex flex-col gap-4">
             {navLinks.map((link) => (
               <a
