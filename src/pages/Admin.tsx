@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, Calendar, Clock, MapPin, Phone, Mail, Filter, RefreshCw, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Phone, Mail, Filter, RefreshCw, CheckCircle2, XCircle, Loader2, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 type Appointment = {
   id: string;
@@ -27,6 +28,7 @@ const statusColors: Record<string, string> = {
 };
 
 const Admin = () => {
+  const { session, loading: authLoading, signOut } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
@@ -49,8 +51,22 @@ const Admin = () => {
   };
 
   useEffect(() => {
-    fetchAppointments();
-  }, []);
+    if (session) {
+      fetchAppointments();
+    }
+  }, [session]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/admin/login" replace />;
+  }
 
   const updateStatus = async (id: string, newStatus: string) => {
     setUpdating(id);
@@ -107,14 +123,23 @@ const Admin = () => {
                 Appointments <span className="text-primary">Panel</span>
               </h1>
             </div>
-            <button
-              onClick={fetchAppointments}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchAppointments}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                Refresh
+              </button>
+              <button
+                onClick={signOut}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/30 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
+            </div>
           </div>
         </header>
 
