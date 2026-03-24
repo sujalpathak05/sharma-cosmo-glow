@@ -28,10 +28,23 @@ const statusColors: Record<string, string> = {
 };
 
 const Admin = () => {
+  const { session, loading: authLoading, signOut } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
   const [updating, setUpdating] = useState<string | null>(null);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/admin/login" replace />;
+  }
 
   const fetchAppointments = async () => {
     setLoading(true);
