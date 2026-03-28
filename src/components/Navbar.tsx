@@ -33,7 +33,7 @@ const Navbar = () => {
     >
       <nav className="section-container section-padding flex items-center justify-between h-16 sm:h-20">
         <a href="#home" className="font-display text-xl sm:text-2xl font-bold text-foreground tracking-tight hover:scale-105 transition-transform duration-200">
-          Sharma <span className="text-primary">Cosmo</span>
+          Sharma <span className="text-primary">Cosmo Clinic</span>
         </a>
 
         {/* Desktop nav */}
