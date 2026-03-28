@@ -56,6 +56,48 @@ export type Database = {
         }
         Relationships: []
       }
+      disabled_slots: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          time_slot: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          time_slot: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          time_slot?: string
+        }
+        Relationships: []
+      }
+      off_dates: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
