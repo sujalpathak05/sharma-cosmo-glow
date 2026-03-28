@@ -28,7 +28,7 @@ const Navbar = () => {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
           ? "bg-card/95 backdrop-blur-md shadow-lg shadow-black/[0.03]"
-          : "bg-transparent"
+          : "bg-card/70 backdrop-blur-sm"
       } ${loaded ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}
     >
       <nav className="section-container section-padding flex items-center justify-between h-16 sm:h-20">
