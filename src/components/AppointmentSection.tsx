@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { CalendarDays, CheckCircle2, MapPin } from "lucide-react";
 import { toast } from "sonner";
@@ -17,10 +17,41 @@ const locations = [
   { value: "Noida", label: "Noida" },
 ];
 
+const ALL_TIME_SLOTS = [
+  "11:00 AM – 11:15 AM",
+  "11:15 AM – 11:30 AM",
+  "11:30 AM – 11:45 AM",
+  "11:45 AM – 12:00 PM",
+  "12:00 PM – 12:15 PM",
+  "12:15 PM – 12:30 PM",
+  "12:30 PM – 12:45 PM",
+  "12:45 PM – 1:00 PM",
+  "1:00 PM – 1:15 PM",
+  "1:15 PM – 1:30 PM",
+  "1:30 PM – 1:45 PM",
+  "1:45 PM – 2:00 PM",
+  "2:00 PM – 2:15 PM",
+  "2:15 PM – 2:30 PM",
+  "2:30 PM – 2:45 PM",
+  "2:45 PM – 3:00 PM",
+  "5:30 PM – 5:45 PM",
+  "5:45 PM – 6:00 PM",
+  "6:00 PM – 6:15 PM",
+  "6:15 PM – 6:30 PM",
+  "6:30 PM – 6:45 PM",
+  "6:45 PM – 7:00 PM",
+  "7:00 PM – 7:15 PM",
+  "7:15 PM – 7:30 PM",
+  "7:30 PM – 7:45 PM",
+  "7:45 PM – 8:00 PM",
+];
+
 const AppointmentSection = () => {
   const sectionRef = useScrollReveal<HTMLElement>();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [offDates, setOffDates] = useState<string[]>([]);
+  const [disabledSlots, setDisabledSlots] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -32,14 +63,52 @@ const AppointmentSection = () => {
     message: "",
   });
 
+  // Fetch off dates
+  useEffect(() => {
+    const fetchOffDates = async () => {
+      const { data } = await supabase.from("off_dates").select("date");
+      if (data) setOffDates(data.map((d: any) => d.date));
+    };
+    fetchOffDates();
+  }, []);
+
+  // Fetch disabled slots when date changes
+  useEffect(() => {
+    if (!formData.date) {
+      setDisabledSlots([]);
+      return;
+    }
+    const fetchDisabledSlots = async () => {
+      const { data } = await supabase
+        .from("disabled_slots")
+        .select("time_slot")
+        .eq("date", formData.date);
+      if (data) setDisabledSlots(data.map((d: any) => d.time_slot));
+    };
+    fetchDisabledSlots();
+  }, [formData.date]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "date") {
+      setFormData({ ...formData, date: value, time: "" });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
+
+  const isDateOff = (dateStr: string) => offDates.includes(dateStr);
+
+  const availableSlots = ALL_TIME_SLOTS.filter((slot) => !disabledSlots.includes(slot));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.phone.trim() || !formData.service || !formData.location) {
       toast.error("Please fill in all required fields.");
+      return;
+    }
+    if (formData.date && isDateOff(formData.date)) {
+      toast.error("Selected date is not available. Please choose another date.");
       return;
     }
     setLoading(true);
@@ -64,6 +133,9 @@ const AppointmentSection = () => {
       setLoading(false);
     }
   };
+
+  // Get today's date in YYYY-MM-DD for min attribute
+  const today = new Date().toISOString().split("T")[0];
 
   if (submitted) {
     return (
@@ -104,7 +176,7 @@ const AppointmentSection = () => {
               <div className="flex items-center gap-4">
                 <CalendarDays className="text-primary" size={24} />
                 <div>
-                  <p className="font-body font-semibold text-foreground text-sm">Mon – Sat: 10:00 AM – 7:00 PM</p>
+                  <p className="font-body font-semibold text-foreground text-sm">Mon – Sat: 11:00 AM – 3:00 PM & 5:30 PM – 8:00 PM</p>
                   <p className="font-body text-sm text-muted-foreground">Sunday by appointment only</p>
                 </div>
               </div>
@@ -209,27 +281,48 @@ const AppointmentSection = () => {
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Preferred Date</label>
-                <input
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
-                />
-              </div>
-              <div>
-                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Preferred Time</label>
-                <input
-                  name="time"
-                  type="time"
-                  value={formData.time}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
-                />
-              </div>
+            <div className="mb-4">
+              <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Preferred Date</label>
+              <input
+                name="date"
+                type="date"
+                min={today}
+                value={formData.date}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 rounded-lg border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow ${
+                  formData.date && isDateOff(formData.date) ? "border-destructive" : "border-border"
+                }`}
+              />
+              {formData.date && isDateOff(formData.date) && (
+                <p className="text-destructive text-xs mt-1 font-body">⚠ This date is unavailable. Please select another date.</p>
+              )}
+            </div>
+
+            {/* Time Slots */}
+            <div className="mb-6">
+              <label className="font-body text-sm font-medium text-foreground mb-2 block">Preferred Time Slot</label>
+              {formData.date && isDateOff(formData.date) ? (
+                <p className="text-muted-foreground text-sm font-body">Select an available date first.</p>
+              ) : availableSlots.length === 0 && formData.date ? (
+                <p className="text-muted-foreground text-sm font-body">No slots available for this date.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                  {(formData.date ? availableSlots : ALL_TIME_SLOTS).map((slot) => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, time: slot })}
+                      className={`px-3 py-2 rounded-lg text-xs font-body font-medium transition-all duration-200 border ${
+                        formData.time === slot
+                          ? "bg-primary text-primary-foreground border-primary shadow-md"
+                          : "bg-background text-foreground border-border hover:border-primary/50 hover:bg-primary/5"
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="mb-6">

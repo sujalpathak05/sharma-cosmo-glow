@@ -6,7 +6,7 @@ const Footer = () => (
       <div className="grid sm:grid-cols-3 gap-8 mb-10">
         <div>
           <p className="font-display text-xl font-bold text-primary-foreground mb-3">
-            Sharma <span className="text-primary">Cosmo</span>
+            Sharma <span className="text-primary">Cosmo Clinic</span>
           </p>
           <p className="font-body text-sm leading-relaxed max-w-xs">
             Your trusted destination for advanced skincare and cosmetic treatments.
