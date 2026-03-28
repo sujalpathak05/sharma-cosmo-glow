@@ -1,9 +1,10 @@
-import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback, useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { Eye, EyeOff, Loader2, Lock, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Lock, Eye, EyeOff, Shield } from "lucide-react";
+
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -12,38 +13,47 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password.trim()) return;
-    setLoading(true);
+  const handleLogin = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (!email.trim() || !password.trim()) {
+        return;
+      }
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Login successful!");
-      navigate("/admin");
-    }
-    setLoading(false);
-  }, [email, password, navigate]);
+      setLoading(true);
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Login successful!");
+        navigate("/admin");
+      }
+
+      setLoading(false);
+    },
+    [email, password, navigate],
+  );
 
   return (
     <>
       <Helmet>
-        <title>Admin Login – Sharma Cosmo Clinic</title>
+        <title>Admin Login - Sharma Cosmo Clinic</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
       <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
-        {/* Animated background elements */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/4 -left-20 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
           <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-primary/3 rounded-full blur-3xl animate-[pulse_6s_ease-in-out_infinite_1s]" />
         </div>
 
         <div className="w-full max-w-md relative z-10">
-          {/* Header with staggered animations */}
           <div className="text-center mb-8 animate-fade-up" style={{ animationDuration: "0.5s" }}>
             <div className="inline-flex items-center justify-center w-18 h-18 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 mb-5 shadow-lg shadow-primary/10 animate-[scale-in_0.4s_ease-out]">
               <Shield className="text-primary" size={32} />
@@ -52,11 +62,10 @@ const AdminLogin = () => {
               Admin <span className="text-primary">Panel</span>
             </h1>
             <p className="text-sm text-muted-foreground mt-2 font-body">
-              Secure access to manage appointments
+              Admin password can only be created or changed manually by the owner.
             </p>
           </div>
 
-          {/* Form card with animation */}
           <form
             onSubmit={handleLogin}
             className="bg-card border border-border rounded-2xl p-6 sm:p-8 space-y-5 shadow-xl shadow-foreground/5 animate-fade-up"
@@ -86,7 +95,7 @@ const AdminLogin = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 pr-11 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 font-body transition-all duration-200"
-                  placeholder="••••••••"
+                  placeholder="********"
                   autoComplete="current-password"
                 />
                 <button
@@ -124,7 +133,7 @@ const AdminLogin = () => {
             style={{ animationDelay: "0.3s", animationDuration: "0.5s", animationFillMode: "both" }}
           >
             <a href="/" className="hover:text-foreground transition-colors inline-flex items-center gap-1">
-              ← Back to website
+              Back to website
             </a>
           </p>
         </div>

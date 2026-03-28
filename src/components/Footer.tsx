@@ -9,17 +9,20 @@ const Footer = () => (
             Sharma <span className="text-primary">Cosmo</span>
           </p>
           <p className="font-body text-sm leading-relaxed max-w-xs">
-            Your trusted destination for advanced skincare and cosmetic treatments. 
+            Your trusted destination for advanced skincare and cosmetic treatments.
             Enhancing your natural beauty with expertise and care.
           </p>
         </div>
         <div>
           <p className="font-body font-semibold text-primary-foreground text-sm mb-3">Quick Links</p>
           <ul className="space-y-2">
-            {["About", "Services", "Gallery", "Contact"].map((l) => (
-              <li key={l}>
-                <a href={`#${l.toLowerCase()}`} className="font-body text-sm hover:text-primary-foreground transition-colors">
-                  {l}
+            {["About", "Services", "Blogs", "Gallery", "Contact"].map((link) => (
+              <li key={link}>
+                <a
+                  href={`#${link.toLowerCase()}`}
+                  className="font-body text-sm hover:text-primary-foreground transition-colors"
+                >
+                  {link}
                 </a>
               </li>
             ))}
@@ -28,10 +31,10 @@ const Footer = () => (
         <div>
           <p className="font-body font-semibold text-primary-foreground text-sm mb-3">Services</p>
           <ul className="space-y-2">
-            {["Skin Treatment", "Hair Fall Treatment", "Laser Treatment", "Anti-Aging"].map((s) => (
-              <li key={s}>
+            {["Skin Treatment", "Hair Fall Treatment", "Laser Treatment", "Anti-Aging"].map((service) => (
+              <li key={service}>
                 <a href="#services" className="font-body text-sm hover:text-primary-foreground transition-colors">
-                  {s}
+                  {service}
                 </a>
               </li>
             ))}
