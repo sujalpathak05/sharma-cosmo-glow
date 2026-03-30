@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, Calendar, Clock, MapPin, Phone, Mail, Filter, RefreshCw, CheckCircle2, XCircle, Loader2, LogOut, Settings } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Phone, Mail, Filter, RefreshCw, CheckCircle2, XCircle, Loader2, LogOut, Settings, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import SlotManagement from "@/components/admin/SlotManagement";
+import ReviewManagement from "@/components/admin/ReviewManagement";
 
 type Appointment = {
   id: string;
@@ -34,7 +35,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
   const [updating, setUpdating] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"appointments" | "slots">("appointments");
+  const [activeTab, setActiveTab] = useState<"appointments" | "slots" | "reviews">("appointments");
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -146,11 +147,23 @@ const Admin = () => {
             >
               <Settings size={16} /> Manage Slots & Dates
             </button>
+            <button
+              onClick={() => setActiveTab("reviews")}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeTab === "reviews"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <MessageSquare size={16} /> Reviews
+            </button>
           </div>
         </div>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeTab === "slots" ? (
+          {activeTab === "reviews" ? (
+            <ReviewManagement />
+          ) : activeTab === "slots" ? (
             <SlotManagement />
           ) : (
             <>
