@@ -63,6 +63,11 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'DM Sans', sans-serif;
+    background-image:
+      radial-gradient(circle at top left, hsl(var(--rose-soft) / 0.85), transparent 28%),
+      radial-gradient(circle at top right, hsl(var(--gold-light) / 0.65), transparent 24%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--cream)));
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -72,6 +77,11 @@
 
   html {
     scroll-behavior: smooth;
+  }
+
+  #root {
+    min-height: 100vh;
+    overflow-x: clip;
   }
 }
 
@@ -133,6 +143,175 @@
   .bg-gold-light {
     background-color: hsl(var(--gold-light));
   }
+
+  .glass-panel {
+    background:
+      linear-gradient(135deg, hsl(var(--card) / 0.9), hsl(var(--card) / 0.72));
+    border: 1px solid hsl(var(--border) / 0.85);
+    box-shadow: 0 24px 60px -32px hsl(var(--foreground) / 0.28);
+    backdrop-filter: blur(18px);
+  }
+
+  .spotlight-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .spotlight-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .spotlight-card::before {
+    content: "";
+    position: absolute;
+    inset: -25% 45% 45% -10%;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.2), transparent 72%);
+    opacity: 0;
+    transform: translate3d(-10px, 12px, 0);
+    transition:
+      opacity 0.45s ease,
+      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .spotlight-card::after {
+    content: "";
+    position: absolute;
+    left: 1.5rem;
+    right: 1.5rem;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.42), transparent);
+    opacity: 0.5;
+    transform: scaleX(0.7);
+    transform-origin: center;
+    transition:
+      opacity 0.45s ease,
+      transform 0.45s ease;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .spotlight-card:hover::before,
+  .spotlight-card:focus-within::before {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .spotlight-card:hover::after,
+  .spotlight-card:focus-within::after {
+    opacity: 0.95;
+    transform: scaleX(1);
+  }
+
+  .section-glow {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .section-glow > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-glow::before {
+    content: "";
+    position: absolute;
+    top: 6%;
+    left: 50%;
+    width: min(44rem, 70vw);
+    height: min(30rem, 48vw);
+    transform: translateX(-50%);
+    background: radial-gradient(circle, hsl(var(--primary) / 0.14), transparent 72%);
+    filter: blur(28px);
+    opacity: 0.8;
+    animation: halo-pulse 11s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .motion-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.3) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-size: 58px 58px;
+    mask-image: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.85) 18%, rgba(0, 0, 0, 0.85) 82%, transparent);
+    opacity: 0.45;
+    animation: grid-pan 22s linear infinite;
+  }
+
+  .motion-orb {
+    border-radius: 9999px;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.26), transparent 70%);
+    filter: blur(12px);
+    animation: orb-drift 18s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .motion-orb-gold {
+    border-radius: 9999px;
+    background: radial-gradient(circle, hsl(var(--gold) / 0.18), transparent 70%);
+    filter: blur(12px);
+    animation: orb-drift-reverse 20s ease-in-out infinite;
+    pointer-events: none;
+  }
+}
+
+@keyframes orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, -24px, 0) scale(1.08);
+  }
+}
+
+@keyframes orb-drift-reverse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-24px, 18px, 0) scale(1.12);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes halo-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translateX(-50%) scale(0.96);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translateX(-50%) scale(1.04);
+  }
+}
+
+@keyframes grid-pan {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-18px, 12px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 /* Scroll reveal animation base */
@@ -179,4 +358,18 @@
   opacity: 1;
   transform: translateX(0);
   filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

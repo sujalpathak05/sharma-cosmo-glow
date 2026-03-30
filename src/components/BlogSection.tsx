@@ -53,8 +53,10 @@ const BlogSection = () => {
   return (
     <section
       id="blogs"
-      className="py-24 lg:py-32 bg-gradient-to-b from-background via-cream to-background section-padding"
+      className="section-glow relative py-24 lg:py-32 bg-gradient-to-b from-background via-cream to-background section-padding overflow-hidden"
     >
+      <div className="absolute inset-0 motion-grid opacity-30 pointer-events-none" />
+      <div className="absolute pointer-events-none left-0 top-20 h-56 w-56 motion-orb-gold opacity-60" />
       <div className="section-container">
         <div
           ref={headerRef}
@@ -75,7 +77,7 @@ const BlogSection = () => {
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-2xl border border-border bg-card/80 px-4 py-5 text-center shadow-sm"
+                className="glass-panel rounded-2xl px-4 py-5 text-center shadow-sm"
               >
                 <p className="font-display text-2xl sm:text-3xl text-primary mb-1">{stat.value}</p>
                 <p className="font-body text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
@@ -141,7 +143,7 @@ const BlogSection = () => {
               <CarouselItem key={post.slug} className="md:basis-1/2 xl:basis-1/3">
                 <Link
                   to={`/blogs/${post.slug}`}
-                  className="group block h-full rounded-3xl border border-border bg-card p-6 sm:p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-black/5"
+                  className="spotlight-card group block h-full rounded-3xl border border-border bg-card p-6 sm:p-7 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-primary/40 hover:shadow-xl hover:shadow-black/5"
                 >
                   <div className="mb-4 flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -233,7 +235,7 @@ const BlogSection = () => {
 
         <div
           ref={ctaRef}
-          className="reveal mt-12 rounded-3xl border border-border bg-card px-6 py-8 sm:px-8 sm:py-10"
+          className="reveal glass-panel mt-12 rounded-3xl px-6 py-8 sm:px-8 sm:py-10"
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>

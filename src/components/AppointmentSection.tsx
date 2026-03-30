@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { CalendarDays, CheckCircle2, MapPin } from "lucide-react";
+import { CalendarDays, CheckCircle2, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { clinicContact } from "@/lib/contactDetails";
+import { slotLabelToSqlTime } from "@/lib/appointmentTime";
+import { saveLocalAppointment } from "@/lib/appointmentStore";
 
 const services = [
   "Skin Treatment",
@@ -13,37 +16,35 @@ const services = [
   "Cosmetic Procedures",
 ];
 
-const locations = [
-  { value: "Noida", label: "Noida" },
-];
+const locations = [{ value: "Noida", label: "Noida" }];
 
 const ALL_TIME_SLOTS = [
-  "11:00 AM – 11:15 AM",
-  "11:15 AM – 11:30 AM",
-  "11:30 AM – 11:45 AM",
-  "11:45 AM – 12:00 PM",
-  "12:00 PM – 12:15 PM",
-  "12:15 PM – 12:30 PM",
-  "12:30 PM – 12:45 PM",
-  "12:45 PM – 1:00 PM",
-  "1:00 PM – 1:15 PM",
-  "1:15 PM – 1:30 PM",
-  "1:30 PM – 1:45 PM",
-  "1:45 PM – 2:00 PM",
-  "2:00 PM – 2:15 PM",
-  "2:15 PM – 2:30 PM",
-  "2:30 PM – 2:45 PM",
-  "2:45 PM – 3:00 PM",
-  "5:30 PM – 5:45 PM",
-  "5:45 PM – 6:00 PM",
-  "6:00 PM – 6:15 PM",
-  "6:15 PM – 6:30 PM",
-  "6:30 PM – 6:45 PM",
-  "6:45 PM – 7:00 PM",
-  "7:00 PM – 7:15 PM",
-  "7:15 PM – 7:30 PM",
-  "7:30 PM – 7:45 PM",
-  "7:45 PM – 8:00 PM",
+  "11:00 AM - 11:15 AM",
+  "11:15 AM - 11:30 AM",
+  "11:30 AM - 11:45 AM",
+  "11:45 AM - 12:00 PM",
+  "12:00 PM - 12:15 PM",
+  "12:15 PM - 12:30 PM",
+  "12:30 PM - 12:45 PM",
+  "12:45 PM - 1:00 PM",
+  "1:00 PM - 1:15 PM",
+  "1:15 PM - 1:30 PM",
+  "1:30 PM - 1:45 PM",
+  "1:45 PM - 2:00 PM",
+  "2:00 PM - 2:15 PM",
+  "2:15 PM - 2:30 PM",
+  "2:30 PM - 2:45 PM",
+  "2:45 PM - 3:00 PM",
+  "5:30 PM - 5:45 PM",
+  "5:45 PM - 6:00 PM",
+  "6:00 PM - 6:15 PM",
+  "6:15 PM - 6:30 PM",
+  "6:30 PM - 6:45 PM",
+  "6:45 PM - 7:00 PM",
+  "7:00 PM - 7:15 PM",
+  "7:15 PM - 7:30 PM",
+  "7:30 PM - 7:45 PM",
+  "7:45 PM - 8:00 PM",
 ];
 
 const AppointmentSection = () => {
@@ -52,6 +53,7 @@ const AppointmentSection = () => {
   const [loading, setLoading] = useState(false);
   const [offDates, setOffDates] = useState<string[]>([]);
   const [disabledSlots, setDisabledSlots] = useState<string[]>([]);
+  const [savedMode, setSavedMode] = useState<"cloud" | "local">("cloud");
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -63,28 +65,29 @@ const AppointmentSection = () => {
     message: "",
   });
 
-  // Fetch off dates
   useEffect(() => {
     const fetchOffDates = async () => {
       const { data } = await supabase.from("off_dates").select("date");
-      if (data) setOffDates(data.map((d: any) => d.date));
+      if (data) setOffDates(data.map((d: { date: string }) => d.date));
     };
     fetchOffDates();
   }, []);
 
-  // Fetch disabled slots when date changes
   useEffect(() => {
     if (!formData.date) {
       setDisabledSlots([]);
       return;
     }
+
     const fetchDisabledSlots = async () => {
       const { data } = await supabase
         .from("disabled_slots")
         .select("time_slot")
         .eq("date", formData.date);
-      if (data) setDisabledSlots(data.map((d: any) => d.time_slot));
+
+      if (data) setDisabledSlots(data.map((d: { time_slot: string }) => d.time_slot));
     };
+
     fetchDisabledSlots();
   }, [formData.date]);
 
@@ -98,57 +101,109 @@ const AppointmentSection = () => {
   };
 
   const isDateOff = (dateStr: string) => offDates.includes(dateStr);
-
   const availableSlots = ALL_TIME_SLOTS.filter((slot) => !disabledSlots.includes(slot));
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      phone: "",
+      email: "",
+      service: "",
+      location: "",
+      date: "",
+      time: "",
+      message: "",
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!formData.name.trim() || !formData.phone.trim() || !formData.service || !formData.location) {
       toast.error("Please fill in all required fields.");
       return;
     }
+
     if (formData.date && isDateOff(formData.date)) {
       toast.error("Selected date is not available. Please choose another date.");
       return;
     }
+
     setLoading(true);
+
     try {
-      const { error } = await supabase.from("appointments").insert({
+      const preferredTime = formData.time ? slotLabelToSqlTime(formData.time) : null;
+      if (formData.time && !preferredTime) {
+        toast.error("Selected time slot could not be processed. Please choose the slot again.");
+        setLoading(false);
+        return;
+      }
+
+      const appointmentPayload = {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
         email: formData.email.trim() || null,
         service: formData.service,
         location: formData.location,
         preferred_date: formData.date || null,
-        preferred_time: formData.time || null,
+        preferred_time: preferredTime,
         message: formData.message.trim() || null,
-      });
-      if (error) throw error;
+      };
+
+      const { error } = await supabase.from("appointments").insert(appointmentPayload);
+
+      if (error) {
+        saveLocalAppointment(appointmentPayload);
+        console.error("Appointment cloud sync failed, saved locally instead:", error);
+        setSavedMode("local");
+        setSubmitted(true);
+        toast.success("Appointment saved in backup queue. It will appear in the admin dashboard on this browser.");
+        return;
+      }
+
+      setSavedMode("cloud");
       setSubmitted(true);
       toast.success("Appointment request submitted! We'll contact you shortly.");
     } catch (err) {
       console.error("Appointment submission error:", err);
-      toast.error("Something went wrong. Please try again or book via WhatsApp.");
+      toast.error("Something went wrong while saving your appointment.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Get today's date in YYYY-MM-DD for min attribute
-  const today = new Date().toISOString().split("T")[0];
-
   if (submitted) {
     return (
-      <section id="appointment" ref={sectionRef} className="reveal py-24 lg:py-32 bg-rose-soft section-padding">
-        <div className="section-container text-center max-w-lg mx-auto">
-          <div className="bg-card rounded-2xl p-12 shadow-lg">
+      <section id="appointment" ref={sectionRef} className="section-glow relative reveal py-24 lg:py-32 bg-rose-soft section-padding overflow-hidden">
+        <div className="absolute inset-0 motion-grid opacity-30 pointer-events-none" />
+        <div className="section-container text-center max-w-xl mx-auto">
+          <div className="glass-panel rounded-[2rem] p-10 sm:p-12 shadow-xl">
             <CheckCircle2 size={56} className="mx-auto text-primary mb-6" />
-            <h3 className="heading-display text-2xl mb-3">Booking Confirmed!</h3>
-            <p className="text-body mb-8">
-              Thank you, {formData.name}! We've received your appointment request for <strong>{formData.service}</strong> at <strong>{formData.location}</strong>.
-              Our team will reach out within 24 hours to confirm your visit.
+            <h3 className="heading-display text-2xl mb-3">
+              {savedMode === "cloud" ? "Booking Confirmed!" : "Booking Saved!"}
+            </h3>
+            <p className="text-body mb-6">
+              Thank you, {formData.name}! We have saved your appointment request for{" "}
+              <strong>{formData.service}</strong> at <strong>{formData.location}</strong>.
             </p>
-            <button onClick={() => { setSubmitted(false); setFormData({ name: "", phone: "", email: "", service: "", location: "", date: "", time: "", message: "" }); }} className="btn-primary">
+            {savedMode === "local" ? (
+              <p className="font-body text-sm text-muted-foreground mb-8">
+                Cloud sync is currently unavailable, so this request has been safely kept in the admin backup queue on this browser.
+              </p>
+            ) : (
+              <p className="font-body text-sm text-muted-foreground mb-8">
+                Our team will reach out within 24 hours to confirm your visit.
+              </p>
+            )}
+            <button
+              onClick={() => {
+                setSubmitted(false);
+                resetForm();
+              }}
+              className="btn-primary"
+            >
               Book Another
             </button>
           </div>
@@ -158,10 +213,12 @@ const AppointmentSection = () => {
   }
 
   return (
-    <section id="appointment" ref={sectionRef} className="reveal py-24 lg:py-32 bg-rose-soft section-padding">
+    <section id="appointment" ref={sectionRef} className="section-glow relative reveal py-24 lg:py-32 bg-rose-soft section-padding overflow-hidden">
+      <div className="absolute inset-0 motion-grid opacity-30 pointer-events-none" />
+      <div className="absolute pointer-events-none left-0 top-20 h-64 w-64 motion-orb opacity-60" />
+
       <div className="section-container">
         <div className="grid lg:grid-cols-2 gap-16 items-start">
-          {/* Left info */}
           <div>
             <p className="font-body text-sm uppercase tracking-[0.15em] text-primary mb-4">Book Now</p>
             <h2 className="heading-display text-3xl sm:text-4xl lg:text-[2.75rem] mb-6">
@@ -172,26 +229,36 @@ const AppointmentSection = () => {
               today and let our experts craft the perfect treatment plan for you.
             </p>
 
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <CalendarDays className="text-primary" size={24} />
+            <div className="space-y-4">
+              <div className="glass-panel spotlight-card rounded-[1.5rem] p-5 flex items-start gap-4">
+                <CalendarDays className="text-primary mt-1" size={24} />
                 <div>
-                  <p className="font-body font-semibold text-foreground text-sm">Mon – Sat: 11:00 AM – 3:00 PM & 5:30 PM – 8:00 PM</p>
+                  <p className="font-body font-semibold text-foreground text-sm">Mon - Sat: 11:00 AM - 3:00 PM & 5:30 PM - 8:00 PM</p>
                   <p className="font-body text-sm text-muted-foreground">Sunday by appointment only</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <MapPin className="text-primary" size={24} />
+
+              <div className="glass-panel spotlight-card rounded-[1.5rem] p-5 flex items-start gap-4">
+                <MapPin className="text-primary mt-1" size={24} />
                 <div>
                   <p className="font-body font-semibold text-foreground text-sm">Noida Clinic</p>
-                  <p className="font-body text-sm text-muted-foreground">Sector 18, Noida, UP</p>
+                  <p className="font-body text-sm text-muted-foreground">{clinicContact.addressInline}</p>
+                </div>
+              </div>
+
+              <div className="glass-panel spotlight-card rounded-[1.5rem] p-5 flex items-start gap-4">
+                <ShieldCheck className="text-primary mt-1" size={24} />
+                <div>
+                  <p className="font-body font-semibold text-foreground text-sm">Priority Booking Support</p>
+                  <p className="font-body text-sm text-muted-foreground">
+                    If online sync is delayed, your request is still preserved in the admin backup queue on this browser.
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* WhatsApp */}
             <a
-              href="https://wa.me/919876543210?text=Hi,%20I%20would%20like%20to%20book%20an%20appointment%20at%20Sharma%20Cosmo%20Clinic."
+              href={clinicContact.whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 mt-10 px-6 py-3 rounded-full bg-[hsl(142,70%,40%)] text-primary-foreground font-body font-medium text-sm hover:shadow-lg transition-all duration-200 active:scale-[0.97]"
@@ -204,8 +271,12 @@ const AppointmentSection = () => {
             </a>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="bg-card rounded-2xl p-8 shadow-xl shadow-black/5">
+          <form onSubmit={handleSubmit} className="glass-panel rounded-[2rem] p-8 shadow-xl shadow-black/5">
+            <div className="flex items-center gap-2 mb-6">
+              <Sparkles size={18} className="text-primary" />
+              <p className="font-body text-sm text-muted-foreground">Fast booking form with admin backup</p>
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Name *</label>
@@ -216,7 +287,7 @@ const AppointmentSection = () => {
                   maxLength={100}
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                   placeholder="Your full name"
                 />
               </div>
@@ -229,8 +300,8 @@ const AppointmentSection = () => {
                   maxLength={15}
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
-                  placeholder="+91 98765 43210"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                  placeholder={clinicContact.phoneDisplay}
                 />
               </div>
             </div>
@@ -243,7 +314,7 @@ const AppointmentSection = () => {
                 maxLength={255}
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                 placeholder="you@example.com"
               />
             </div>
@@ -256,14 +327,15 @@ const AppointmentSection = () => {
                   required
                   value={formData.service}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                 >
                   <option value="">Select a service</option>
-                  {services.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                  {services.map((service) => (
+                    <option key={service} value={service}>{service}</option>
                   ))}
                 </select>
               </div>
+
               <div>
                 <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Location *</label>
                 <select
@@ -271,11 +343,11 @@ const AppointmentSection = () => {
                   required
                   value={formData.location}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                 >
                   <option value="">Select location</option>
-                  {locations.map((loc) => (
-                    <option key={loc.value} value={loc.value}>{loc.label}</option>
+                  {locations.map((location) => (
+                    <option key={location.value} value={location.value}>{location.label}</option>
                   ))}
                 </select>
               </div>
@@ -289,16 +361,15 @@ const AppointmentSection = () => {
                 min={today}
                 value={formData.date}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 rounded-lg border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow ${
+                className={`w-full px-4 py-3 rounded-xl border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow ${
                   formData.date && isDateOff(formData.date) ? "border-destructive" : "border-border"
                 }`}
               />
               {formData.date && isDateOff(formData.date) && (
-                <p className="text-destructive text-xs mt-1 font-body">⚠ This date is unavailable. Please select another date.</p>
+                <p className="text-destructive text-xs mt-1 font-body">This date is unavailable. Please select another date.</p>
               )}
             </div>
 
-            {/* Time Slots */}
             <div className="mb-6">
               <label className="font-body text-sm font-medium text-foreground mb-2 block">Preferred Time Slot</label>
               {formData.date && isDateOff(formData.date) ? (
@@ -312,10 +383,10 @@ const AppointmentSection = () => {
                       key={slot}
                       type="button"
                       onClick={() => setFormData({ ...formData, time: slot })}
-                      className={`px-3 py-2 rounded-lg text-xs font-body font-medium transition-all duration-200 border ${
+                      className={`px-3 py-2 rounded-xl text-xs font-body font-medium transition-all duration-200 border ${
                         formData.time === slot
-                          ? "bg-primary text-primary-foreground border-primary shadow-md"
-                          : "bg-background text-foreground border-border hover:border-primary/50 hover:bg-primary/5"
+                          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                          : "bg-background/90 text-foreground border-border hover:border-primary/50 hover:bg-primary/5"
                       }`}
                     >
                       {slot}
@@ -333,7 +404,7 @@ const AppointmentSection = () => {
                 maxLength={1000}
                 value={formData.message}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow resize-none"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow resize-none"
                 placeholder="Any specific concerns or questions..."
               />
             </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Menu, X, Phone } from "lucide-react";
+import { clinicContact } from "@/lib/contactDetails";
 
 const navLinks = [
   { label: "Home", href: "#home" },
@@ -55,9 +56,9 @@ const Navbar = () => {
         </ul>
 
         <div className="hidden xl:flex items-center gap-4">
-          <a href="tel:+919876543210" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <a href={`tel:${clinicContact.phoneHref}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <Phone size={16} />
-            +91 98765 43210
+            {clinicContact.phoneDisplay}
           </a>
           <a href="#appointment" className="btn-primary text-sm !px-6 !py-2.5">
             Book Appointment

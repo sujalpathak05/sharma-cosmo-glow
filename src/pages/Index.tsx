@@ -10,6 +10,7 @@ import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
 import { Helmet } from "react-helmet-async";
+import { clinicContact } from "@/lib/contactDetails";
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -17,11 +18,14 @@ const jsonLd = {
   "name": "Sharma Cosmo Clinic",
   "description": "Best skin clinic & cosmetology center in Noida offering hair treatment, acne care, pigmentation solutions, laser procedures, anti-aging services by Dr. Visi Kant Sharma.",
   "url": "https://sharmacosmo.com",
-  "telephone": "+919876543210",
+  "telephone": clinicContact.phoneDisplay,
+  "email": clinicContact.email,
   "address": {
     "@type": "PostalAddress",
+    "streetAddress": "T-22, P Block, Sector 11",
     "addressLocality": "Noida",
     "addressRegion": "Uttar Pradesh",
+    "postalCode": "201301",
     "addressCountry": "IN"
   },
   "medicalSpecialty": "Dermatology",
@@ -39,7 +43,7 @@ const Index = () => {
         <title>Sharma Cosmo Clinic Noida | Best Skin & Hair Treatment by Dr. Visi Kant Sharma</title>
         <meta
           name="description"
-          content="Sharma Cosmo Clinic Noida — Best skin doctor & cosmetology center. Hair fall treatment, acne care, pigmentation, laser procedures, anti-aging by Dr. Visi Kant Sharma. Book appointment now!"
+          content="Sharma Cosmo Clinic Noida - Best skin doctor & cosmetology center. Hair fall treatment, acne care, pigmentation, laser procedures, anti-aging by Dr. Visi Kant Sharma. Book appointment now!"
         />
         <meta
           name="keywords"

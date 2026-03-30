@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Phone, Mail, Clock, Instagram, Facebook } from "lucide-react";
+import { MapPin, Phone, Mail } from "lucide-react";
+import { clinicContact } from "@/lib/contactDetails";
 
 const contactInfo = [
-  { icon: MapPin, title: "Address", lines: ["123, MG Road, Near City Hospital", "Sharma Cosmo Clinic, Mumbai - 400001"] },
-  { icon: Phone, title: "Phone", lines: ["+91 98765 43210", "+91 12345 67890"] },
-  { icon: Mail, title: "Email", lines: ["info@sharmacosmo.com", "appointments@sharmacosmo.com"] },
-  { icon: Clock, title: "Working Hours", lines: ["Mon – Sat: 10:00 AM – 7:00 PM", "Sunday: By Appointment Only"] },
+  { icon: Phone, title: "Call Us", lines: [clinicContact.phoneDisplay] },
+  { icon: Mail, title: "Email Support", lines: [clinicContact.email] },
+  { icon: MapPin, title: "Visit Us", lines: clinicContact.addressLines },
 ];
 
 const ContactSection = () => {
@@ -16,7 +16,12 @@ const ContactSection = () => {
     const el = sectionRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.unobserve(el); } },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(el);
+        }
+      },
       { threshold: 0.1 }
     );
     observer.observe(el);
@@ -24,66 +29,61 @@ const ContactSection = () => {
   }, []);
 
   return (
-    <section id="contact" ref={sectionRef} className="py-24 lg:py-32 bg-cream section-padding overflow-hidden">
+    <section id="contact" ref={sectionRef} className="section-glow relative py-24 lg:py-32 bg-cream section-padding overflow-hidden">
+      <div className="absolute inset-0 motion-grid opacity-35 pointer-events-none" />
+      <div className="absolute pointer-events-none -right-16 bottom-0 h-72 w-72 motion-orb opacity-60" />
+
       <div className="section-container">
         <div className={`text-center mb-16 transition-all duration-800 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-          <p className="font-body text-sm uppercase tracking-[0.15em] text-primary mb-4">Contact Us</p>
+          <p className="font-body text-sm uppercase tracking-[0.15em] text-primary mb-4">Support Desk</p>
           <h2 className="heading-display text-3xl sm:text-4xl lg:text-[2.75rem] mb-4">
-            Visit Our Clinic
+            Contact &amp; Support
           </h2>
+          <p className="text-body max-w-2xl mx-auto">
+            Reach out for appointments, treatment guidance, or directions to our Noida clinic.
+          </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-10">
-          {/* Info - slide from left */}
-          <div className={`space-y-8 transition-all duration-1000 ${visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"}`}>
+        <div className="grid lg:grid-cols-2 gap-10 items-stretch">
+          <div className={`space-y-5 transition-all duration-1000 ${visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"}`}>
             {contactInfo.map((item, i) => (
               <div
                 key={item.title}
-                className={`flex gap-4 transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                className={`spotlight-card glass-panel rounded-[1.5rem] flex gap-4 p-5 transition-all duration-700 hover:-translate-y-1 ${
+                  visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                }`}
                 style={{ transitionDelay: `${0.2 + i * 0.1}s` }}
               >
-                <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-rose-soft flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 group cursor-default">
-                  <item.icon size={20} className="text-primary group-hover:text-primary-foreground transition-colors" />
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-rose-soft flex items-center justify-center transition-all duration-300 hover:bg-primary hover:text-primary-foreground">
+                  <item.icon size={20} className="text-primary" />
                 </div>
                 <div>
-                  <p className="font-body font-semibold text-foreground text-sm">{item.title}</p>
+                  <p className="font-body font-semibold text-foreground text-sm mb-1">{item.title}</p>
                   {item.lines.map((line) => (
-                    <p key={line} className="font-body text-sm text-muted-foreground">{line}</p>
+                    <p key={line} className="font-body text-sm text-muted-foreground">
+                      {line}
+                    </p>
                   ))}
                 </div>
               </div>
             ))}
-
-            {/* Social */}
-            <div className={`flex gap-3 pt-2 transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`} style={{ transitionDelay: "0.7s" }}>
-              {[
-                { icon: Instagram, href: "https://instagram.com" },
-                { icon: Facebook, href: "https://facebook.com" },
-              ].map(({ icon: Icon, href }) => (
-                <a
-                  key={href}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary hover:scale-110 transition-all duration-300 active:scale-95"
-                >
-                  <Icon size={18} />
-                </a>
-              ))}
-            </div>
           </div>
 
-          {/* Map - slide from right */}
-          <div className={`rounded-2xl overflow-hidden shadow-lg h-[400px] transition-all duration-1000 ${visible ? "opacity-100 translate-x-0 scale-100" : "opacity-0 translate-x-10 scale-95"}`} style={{ transitionDelay: "0.3s" }}>
+          <div
+            className={`glass-panel rounded-[1.75rem] overflow-hidden shadow-lg h-[400px] transition-all duration-1000 ${
+              visible ? "opacity-100 translate-x-0 scale-100" : "opacity-0 translate-x-10 scale-95"
+            }`}
+            style={{ transitionDelay: "0.3s" }}
+          >
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3771.0!2d72.8311!3d19.0760!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDA0JzMzLjYiTiA3MsKwNDknNTIuMCJF!5e0!3m2!1sen!2sin!4v1234567890"
+              src={clinicContact.mapEmbedSrc}
               width="100%"
               height="100%"
               style={{ border: 0 }}
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              title="Sharma Cosmo Clinic Location"
+              title="Sharma Cosmo Clinic Noida Location"
             />
           </div>
         </div>
