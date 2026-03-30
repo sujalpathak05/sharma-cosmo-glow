@@ -28,26 +28,26 @@ const HeroSection = () => {
       <div className="relative section-container section-padding pt-32 pb-20 lg:pt-0">
         <div className="max-w-xl">
           <p
-            className={`font-body text-sm uppercase tracking-[0.2em] text-rose-medium mb-6 transition-all duration-700 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            className={`font-body text-sm uppercase tracking-[0.2em] text-rose-medium mb-6 transition-all duration-1000 ease-out ${loaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-16"}`}
             style={{ transitionDelay: "0.3s" }}
           >
             Best Skin & Hair Clinic in Noida
           </p>
           <h1
-            className={`heading-display text-4xl sm:text-5xl lg:text-6xl text-primary-foreground mb-6 transition-all duration-700 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            className={`heading-display text-4xl sm:text-5xl lg:text-6xl text-primary-foreground mb-6 transition-all duration-1000 ease-out ${loaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-20"}`}
             style={{ transitionDelay: "0.5s", lineHeight: "1.08" }}
           >
             Sharma Cosmo Clinic — Skin & Hair Experts in Noida
           </h1>
           <p
-            className={`font-body text-base sm:text-lg text-primary-foreground/80 mb-10 max-w-md leading-relaxed transition-all duration-700 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            className={`font-body text-base sm:text-lg text-primary-foreground/80 mb-10 max-w-md leading-relaxed transition-all duration-1000 ease-out ${loaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-16"}`}
             style={{ transitionDelay: "0.7s" }}
           >
             Advanced dermatology & cosmetic treatments by Dr. Visi Kant Sharma. 
             Your skin deserves the best care.
           </p>
           <div
-            className={`flex flex-wrap gap-4 transition-all duration-700 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            className={`flex flex-wrap gap-4 transition-all duration-1000 ease-out ${loaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}`}
             style={{ transitionDelay: "0.9s" }}
           >
             <a href="#appointment" className="btn-primary group">
@@ -59,7 +59,7 @@ const HeroSection = () => {
           </div>
 
           <div
-            className={`flex gap-10 mt-14 transition-all duration-700 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            className={`flex gap-10 mt-14 transition-all duration-1000 ease-out ${loaded ? "opacity-100 translate-x-0" : "opacity-0 translate-x-16"}`}
             style={{ transitionDelay: "1.1s" }}
           >
             {[
@@ -69,7 +69,7 @@ const HeroSection = () => {
             ].map((s, i) => (
               <div
                 key={s.label}
-                className={`transition-all duration-500 ${loaded ? "opacity-100 scale-100" : "opacity-0 scale-90"}`}
+                className={`transition-all duration-700 ease-out ${loaded ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-90"}`}
                 style={{ transitionDelay: `${1.3 + i * 0.15}s` }}
               >
                 <p className="font-display text-2xl sm:text-3xl font-bold text-primary-foreground">{s.num}</p>
