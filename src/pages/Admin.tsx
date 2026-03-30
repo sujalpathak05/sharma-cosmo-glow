@@ -147,6 +147,16 @@ const Admin = () => {
             >
               <Settings size={16} /> Manage Slots & Dates
             </button>
+            <button
+              onClick={() => setActiveTab("reviews")}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeTab === "reviews"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <MessageSquare size={16} /> Reviews
+            </button>
           </div>
         </div>
 
