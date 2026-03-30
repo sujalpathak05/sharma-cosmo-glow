@@ -59,7 +59,7 @@ const HeroSection = () => {
           </div>
 
           <div
-            className={`flex gap-10 mt-14 transition-all duration-700 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            className={`flex gap-10 mt-14 transition-all duration-1000 ease-out ${loaded ? "opacity-100 translate-x-0" : "opacity-0 translate-x-16"}`}
             style={{ transitionDelay: "1.1s" }}
           >
             {[
@@ -69,7 +69,7 @@ const HeroSection = () => {
             ].map((s, i) => (
               <div
                 key={s.label}
-                className={`transition-all duration-500 ${loaded ? "opacity-100 scale-100" : "opacity-0 scale-90"}`}
+                className={`transition-all duration-700 ease-out ${loaded ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-90"}`}
                 style={{ transitionDelay: `${1.3 + i * 0.15}s` }}
               >
                 <p className="font-display text-2xl sm:text-3xl font-bold text-primary-foreground">{s.num}</p>
