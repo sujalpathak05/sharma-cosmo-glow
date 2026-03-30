@@ -35,7 +35,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
   const [updating, setUpdating] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"appointments" | "slots">("appointments");
+  const [activeTab, setActiveTab] = useState<"appointments" | "slots" | "reviews">("appointments");
 
   const fetchAppointments = async () => {
     setLoading(true);
