@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, Calendar, Clock, MapPin, Phone, Mail, Filter, RefreshCw, CheckCircle2, XCircle, Loader2, LogOut, Settings } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Phone, Mail, Filter, RefreshCw, CheckCircle2, XCircle, Loader2, LogOut, Settings, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import SlotManagement from "@/components/admin/SlotManagement";
+import ReviewManagement from "@/components/admin/ReviewManagement";
 
 type Appointment = {
   id: string;
