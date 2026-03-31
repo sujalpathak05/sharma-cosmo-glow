@@ -421,7 +421,7 @@ const Admin = () => {
             <Panel title="Today's agenda" subtitle="The next visits and queues that need immediate team attention.">
               {todayAppointments.length === 0 ? <EmptyState message="No appointments are scheduled for today yet." /> : <div className="space-y-3">{todayAppointments.slice(0, 6).map((item) => <button key={item.id} onClick={() => setActiveSection("appointments")} className="flex w-full items-center justify-between gap-4 rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg"><div><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.service}</p></div><div className="text-right"><p className="font-medium text-foreground">{sqlTimeToSlotLabel(item.preferred_time) ?? "Time TBD"}</p><p className="mt-1 text-xs text-muted-foreground">{item.phone}</p></div></button>)}</div>}
             </Panel>
-            <Panel title="Quick modules" subtitle="Jump into Tatva-style operations blocks.">
+            <Panel title="Quick modules" subtitle="Jump into Sharma Cosmo Clinic operations blocks.">
               <div className="grid gap-3 sm:grid-cols-2">{sections.filter((item) => item.id !== "overview").slice(0, 6).map((item) => { const Icon = item.icon; return <button key={item.id} onClick={() => setActiveSection(item.id)} className="rounded-[22px] border border-[#eddab7] bg-white/70 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff1d3] text-[#c58223]"><Icon className="h-5 w-5" /></span><div><p className="font-semibold text-foreground">{item.label}</p><p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.caption}</p></div></div></button>; })}</div>
             </Panel>
           </div>
@@ -520,7 +520,7 @@ const Admin = () => {
               <aside className={cn("fixed inset-y-0 left-0 z-50 w-[300px] max-w-[86vw] border-r border-[#eedab4] bg-white/92 px-4 py-5 shadow-2xl backdrop-blur-xl transition-transform duration-300 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:rounded-[30px] lg:border", sidebarOpen ? "translate-x-0" : "-translate-x-full")}>
                 <p className="text-xs uppercase tracking-[0.2em] text-[#b67e34]">Clinic OS</p>
                 <h1 className="mt-1 font-display text-3xl text-foreground">Sharma Cosmo</h1>
-                <p className="mt-2 text-sm text-muted-foreground">Tatva-style admin desk for appointments, patients and operations.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Sharma Cosmo Clinic admin desk for appointments, patients and operations.</p>
                 <div className="mt-6 space-y-2">{sections.map((section) => { const Icon = section.icon; return <button key={section.id} onClick={() => { setActiveSection(section.id); setSidebarOpen(false); }} className={cn("flex w-full items-center gap-3 rounded-[22px] px-3 py-3 text-left transition", activeSection === section.id ? "bg-gradient-to-r from-[#f5bd5b] via-[#ffd986] to-[#fff2c7] text-foreground shadow-lg shadow-orange-200/50" : "text-muted-foreground hover:bg-[#fff5de] hover:text-foreground")}><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff5de] text-[#c2872a]"><Icon className="h-5 w-5" /></span><span className="min-w-0 flex-1"><span className="block font-medium">{section.label}</span><span className="block text-xs uppercase tracking-[0.16em] opacity-80">{section.caption}</span></span><ChevronRight className="h-4 w-4" /></button>; })}</div>
               </aside>
               <main className="space-y-6">
@@ -532,7 +532,7 @@ const Admin = () => {
                         <Link to="/" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/70 text-[#a8691c] shadow-sm"><ArrowLeft className="h-5 w-5" /></Link>
                         <span className="rounded-full bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#9b651b]">{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
                       </div>
-                      <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-[#a76d22]">Tatva-style admin dashboard</p>
+                      <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-[#a76d22]">Sharma Cosmo Clinic admin dashboard</p>
                       <h2 className="mt-2 font-display text-4xl text-[#3d2b17] sm:text-5xl">{sections.find((item) => item.id === activeSection)?.label}</h2>
                       <p className="mt-3 max-w-3xl text-sm text-[#65441b] sm:text-base">Manage doctor workflow, clinic bookings, OPD billing, pharmacy invoices, patient flow and follow-ups from a single dashboard.</p>
                     </div>

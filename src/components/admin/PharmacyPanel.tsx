@@ -208,7 +208,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
           <div>
             <p className="text-sm uppercase tracking-[0.18em] text-white/80">Pharmacy panel</p>
             <h2 className="mt-2 font-display text-4xl">Pharmacy Dashboard</h2>
-            <p className="mt-2 text-sm text-white/80">Masters, stock, sales, purchase and expiry reports aligned to your Tatva references.</p>
+            <p className="mt-2 text-sm text-white/80">Masters, stock, sales, purchase and expiry reports aligned to Sharma Cosmo Clinic workflows.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-4 xl:w-[640px]">
             <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Purchase Invoice</p><p className="mt-2 font-display text-3xl">{data.pharmacyPurchases.length}</p></div>
