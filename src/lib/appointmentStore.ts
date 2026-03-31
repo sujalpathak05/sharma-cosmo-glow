@@ -88,6 +88,13 @@ export const saveLocalAppointment = (draft: AppointmentDraft) => {
   return nextRecord;
 };
 
+export const removeLocalAppointment = (id: string) => {
+  const existing = readLocalAppointments();
+  const updated = existing.filter((appointment) => appointment.id !== id);
+  writeLocalAppointments(updated);
+  return updated;
+};
+
 export const updateLocalAppointmentStatus = (id: string, status: string) => {
   const existing = readLocalAppointments();
   const updated = existing.map((appointment) =>

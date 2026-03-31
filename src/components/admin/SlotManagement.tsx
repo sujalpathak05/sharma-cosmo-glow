@@ -4,32 +4,32 @@ import { toast } from "sonner";
 import { CalendarOff, Clock, Plus, Trash2, Loader2 } from "lucide-react";
 
 const ALL_TIME_SLOTS = [
-  "11:00 AM – 11:15 AM",
-  "11:15 AM – 11:30 AM",
-  "11:30 AM – 11:45 AM",
-  "11:45 AM – 12:00 PM",
-  "12:00 PM – 12:15 PM",
-  "12:15 PM – 12:30 PM",
-  "12:30 PM – 12:45 PM",
-  "12:45 PM – 1:00 PM",
-  "1:00 PM – 1:15 PM",
-  "1:15 PM – 1:30 PM",
-  "1:30 PM – 1:45 PM",
-  "1:45 PM – 2:00 PM",
-  "2:00 PM – 2:15 PM",
-  "2:15 PM – 2:30 PM",
-  "2:30 PM – 2:45 PM",
-  "2:45 PM – 3:00 PM",
-  "5:30 PM – 5:45 PM",
-  "5:45 PM – 6:00 PM",
-  "6:00 PM – 6:15 PM",
-  "6:15 PM – 6:30 PM",
-  "6:30 PM – 6:45 PM",
-  "6:45 PM – 7:00 PM",
-  "7:00 PM – 7:15 PM",
-  "7:15 PM – 7:30 PM",
-  "7:30 PM – 7:45 PM",
-  "7:45 PM – 8:00 PM",
+  "11:00 AM - 11:15 AM",
+  "11:15 AM - 11:30 AM",
+  "11:30 AM - 11:45 AM",
+  "11:45 AM - 12:00 PM",
+  "12:00 PM - 12:15 PM",
+  "12:15 PM - 12:30 PM",
+  "12:30 PM - 12:45 PM",
+  "12:45 PM - 1:00 PM",
+  "1:00 PM - 1:15 PM",
+  "1:15 PM - 1:30 PM",
+  "1:30 PM - 1:45 PM",
+  "1:45 PM - 2:00 PM",
+  "2:00 PM - 2:15 PM",
+  "2:15 PM - 2:30 PM",
+  "2:30 PM - 2:45 PM",
+  "2:45 PM - 3:00 PM",
+  "5:30 PM - 5:45 PM",
+  "5:45 PM - 6:00 PM",
+  "6:00 PM - 6:15 PM",
+  "6:15 PM - 6:30 PM",
+  "6:30 PM - 6:45 PM",
+  "6:45 PM - 7:00 PM",
+  "7:00 PM - 7:15 PM",
+  "7:15 PM - 7:30 PM",
+  "7:30 PM - 7:45 PM",
+  "7:45 PM - 8:00 PM",
 ];
 
 type OffDate = { id: string; date: string; reason: string | null };
@@ -157,7 +157,7 @@ const SlotManagement = () => {
 
       {tab === "off-dates" && (
         <div className="space-y-4">
-          <div className="bg-card border border-border rounded-xl p-5">
+          <div className="glass-panel spotlight-card rounded-[26px] p-5">
             <h3 className="font-display text-base font-semibold text-foreground mb-4">Add Off Date</h3>
             <div className="flex flex-col sm:flex-row gap-3">
               <input
@@ -184,7 +184,7 @@ const SlotManagement = () => {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-xl p-5">
+          <div className="glass-panel spotlight-card rounded-[26px] p-5">
             <h3 className="font-display text-base font-semibold text-foreground mb-4">Scheduled Off Dates</h3>
             {offDates.length === 0 ? (
               <p className="text-muted-foreground text-sm font-body">No off dates scheduled.</p>
@@ -196,7 +196,7 @@ const SlotManagement = () => {
                       <span className="font-body text-sm font-medium text-foreground">
                         {new Date(d.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", weekday: "short" })}
                       </span>
-                      {d.reason && <span className="text-muted-foreground text-xs ml-2">— {d.reason}</span>}
+                      {d.reason && <span className="text-muted-foreground text-xs ml-2">- {d.reason}</span>}
                     </div>
                     <button onClick={() => removeOffDate(d.id)} className="text-destructive hover:text-destructive/80 p-1">
                       <Trash2 size={16} />
@@ -211,7 +211,7 @@ const SlotManagement = () => {
 
       {tab === "slots" && (
         <div className="space-y-4">
-          <div className="bg-card border border-border rounded-xl p-5">
+          <div className="glass-panel spotlight-card rounded-[26px] p-5">
             <h3 className="font-display text-base font-semibold text-foreground mb-4">Manage Time Slots</h3>
             <p className="text-muted-foreground text-xs font-body mb-3">Select a date, then click slots to disable/enable them.</p>
             <input
@@ -259,7 +259,7 @@ const SlotManagement = () => {
 
           {/* Currently disabled slots summary */}
           {disabledSlots.length > 0 && (
-            <div className="bg-card border border-border rounded-xl p-5">
+            <div className="glass-panel spotlight-card rounded-[26px] p-5">
               <h3 className="font-display text-base font-semibold text-foreground mb-3">Currently Disabled Slots</h3>
               <div className="space-y-2">
                 {Object.entries(
@@ -286,3 +286,4 @@ const SlotManagement = () => {
 };
 
 export default SlotManagement;
+

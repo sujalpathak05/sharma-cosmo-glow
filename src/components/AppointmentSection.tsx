@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { clinicContact } from "@/lib/contactDetails";
 import { slotLabelToSqlTime } from "@/lib/appointmentTime";
-import { saveLocalAppointment } from "@/lib/appointmentStore";
+import { removeLocalAppointment, saveLocalAppointment } from "@/lib/appointmentStore";
 
 const services = [
   "Skin Treatment",
@@ -118,6 +118,34 @@ const AppointmentSection = () => {
     });
   };
 
+  const syncAppointmentToCloud = async (
+    localId: string,
+    appointmentPayload: {
+      name: string;
+      phone: string;
+      email: string | null;
+      service: string;
+      location: string;
+      preferred_date: string | null;
+      preferred_time: string | null;
+      message: string | null;
+    },
+  ) => {
+    try {
+      const { error } = await supabase.from("appointments").insert(appointmentPayload);
+
+      if (error) {
+        console.error("Appointment cloud sync failed, kept local backup:", error);
+        return;
+      }
+
+      removeLocalAppointment(localId);
+      setSavedMode("cloud");
+    } catch (error) {
+      console.error("Appointment background sync error:", error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -152,20 +180,12 @@ const AppointmentSection = () => {
         message: formData.message.trim() || null,
       };
 
-      const { error } = await supabase.from("appointments").insert(appointmentPayload);
+      const localRecord = saveLocalAppointment(appointmentPayload);
+      void syncAppointmentToCloud(localRecord.id, appointmentPayload);
 
-      if (error) {
-        saveLocalAppointment(appointmentPayload);
-        console.error("Appointment cloud sync failed, saved locally instead:", error);
-        setSavedMode("local");
-        setSubmitted(true);
-        toast.success("Appointment saved in backup queue. It will appear in the admin dashboard on this browser.");
-        return;
-      }
-
-      setSavedMode("cloud");
+      setSavedMode("local");
       setSubmitted(true);
-      toast.success("Appointment request submitted! We'll contact you shortly.");
+      toast.success("Appointment request submitted! It is saved instantly and syncing to the admin dashboard.");
     } catch (err) {
       console.error("Appointment submission error:", err);
       toast.error("Something went wrong while saving your appointment.");

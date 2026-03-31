@@ -77,7 +77,7 @@ const ReviewManagement = () => {
       ) : (
         <div className="space-y-4">
           {filtered.map(r => (
-            <div key={r.id} className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-shadow">
+            <div key={r.id} className="glass-panel spotlight-card rounded-[26px] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -119,3 +119,4 @@ const ReviewManagement = () => {
 };
 
 export default ReviewManagement;
+
