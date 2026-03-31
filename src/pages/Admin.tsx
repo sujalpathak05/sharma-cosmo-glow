@@ -46,6 +46,7 @@ import {
   readLocalAppointments,
   updateLocalAppointmentStatus,
 } from "@/lib/appointmentStore";
+import { getConsultationFee, getConsultationModeLabel } from "@/lib/consultationMode";
 import { cn } from "@/lib/utils";
 
 type Appointment = AppointmentRecord;
@@ -150,7 +151,8 @@ const appointmentMs = (appointment: Appointment) => {
   return new Date(appointment.created_at).getTime();
 };
 
-const estimateValue = (service: string) => {
+const estimateValue = (service: string, consultationMode?: string | null) => {
+  if (consultationMode) return getConsultationFee(consultationMode);
   const value = service.toLowerCase();
   if (value.includes("filler")) return 18000;
   if (value.includes("botox")) return 12000;
@@ -324,14 +326,14 @@ const Admin = () => {
     .filter((item) => item.status === "completed")
     .sort((left, right) => appointmentMs(right) - appointmentMs(left))
     .slice(0, 6)
-    .map((item) => ({ ...item, amount: estimateValue(item.service) }));
+    .map((item) => ({ ...item, amount: estimateValue(item.service, item.consultation_mode) }));
   const estimatedCollected = billingRows.reduce((sum, item) => sum + item.amount, 0);
   const estimatedPipeline = appointments
     .filter((item) => item.status === "pending" || item.status === "confirmed")
-    .reduce((sum, item) => sum + estimateValue(item.service), 0);
+    .reduce((sum, item) => sum + estimateValue(item.service, item.consultation_mode), 0);
   const estimatedRisk = appointments
     .filter((item) => item.status === "cancelled")
-    .reduce((sum, item) => sum + estimateValue(item.service), 0);
+    .reduce((sum, item) => sum + estimateValue(item.service, item.consultation_mode), 0);
 
   const patientMap = appointments.reduce<Map<string, PatientProfile>>((map, item) => {
     const key = item.phone || item.email || item.id;
@@ -341,7 +343,7 @@ const Admin = () => {
       existing.completed += item.status === "completed" ? 1 : 0;
       existing.upcoming += item.preferred_date && item.preferred_date >= todayKey && item.status !== "cancelled" ? 1 : 0;
       if (!existing.services.includes(item.service)) existing.services.push(item.service);
-      existing.estimatedValue += estimateValue(item.service);
+      existing.estimatedValue += estimateValue(item.service, item.consultation_mode);
       if (!existing.nextVisit && item.preferred_date && item.preferred_date >= todayKey && item.status !== "cancelled") {
         existing.nextVisit = `${formatDate(item.preferred_date)} • ${sqlTimeToSlotLabel(item.preferred_time) ?? "Time TBD"}`;
       }
@@ -360,7 +362,7 @@ const Admin = () => {
       nextVisit: item.preferred_date && item.preferred_date >= todayKey && item.status !== "cancelled"
         ? `${formatDate(item.preferred_date)} • ${sqlTimeToSlotLabel(item.preferred_time) ?? "Time TBD"}`
         : null,
-      estimatedValue: estimateValue(item.service),
+      estimatedValue: estimateValue(item.service, item.consultation_mode),
     });
     return map;
   }, new Map());
@@ -390,6 +392,7 @@ const Admin = () => {
                   <span className={cn("rounded-full px-3 py-1 text-xs font-semibold capitalize", statusColors[item.status] || "bg-muted text-muted-foreground")}>{item.status}</span>
                 </div>
                 <p className="mt-2 text-sm font-medium uppercase tracking-[0.18em] text-[#b67e34]">{item.service}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{getConsultationModeLabel(item.consultation_mode)}</p>
                 <div className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 xl:grid-cols-3">
                   <span className="flex items-center gap-2"><Phone className="h-4 w-4" />{item.phone}</span>
                   {item.email ? <span className="flex items-center gap-2"><Mail className="h-4 w-4" />{item.email}</span> : null}
@@ -454,7 +457,18 @@ const Admin = () => {
       );
     }
     if (activeSection === "doctor") {
-      return <DoctorPanel appointments={appointments} onGenerateBill={(appointment) => { setOpdDraftAppointmentId(appointment.id); setActiveSection("billing"); }} />;
+      return (
+        <DoctorPanel
+          appointments={appointments}
+          onConsult={(appointment) => {
+            void updateStatus(appointment.id, "confirmed");
+          }}
+          onGenerateBill={(appointment) => {
+            setOpdDraftAppointmentId(appointment.id);
+            setActiveSection("billing");
+          }}
+        />
+      );
     }
 
     if (activeSection === "billing") {
@@ -517,11 +531,18 @@ const Admin = () => {
           <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6 lg:px-8">
             {sidebarOpen ? <button aria-label="Close menu" onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-40 bg-black/35 lg:hidden" /> : null}
             <div className="lg:grid lg:grid-cols-[280px,minmax(0,1fr)] lg:gap-6">
-              <aside className={cn("fixed inset-y-0 left-0 z-50 w-[300px] max-w-[86vw] border-r border-[#eedab4] bg-white/92 px-4 py-5 shadow-2xl backdrop-blur-xl transition-transform duration-300 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:rounded-[30px] lg:border", sidebarOpen ? "translate-x-0" : "-translate-x-full")}>
+              <aside className={cn("fixed inset-y-0 left-0 z-50 flex w-[300px] max-w-[86vw] flex-col border-r border-[#eedab4] bg-white/92 px-4 py-5 shadow-2xl backdrop-blur-xl transition-transform duration-300 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:rounded-[30px] lg:border", sidebarOpen ? "translate-x-0" : "-translate-x-full")}>
                 <p className="text-xs uppercase tracking-[0.2em] text-[#b67e34]">Clinic OS</p>
                 <h1 className="mt-1 font-display text-3xl text-foreground">Sharma Cosmo</h1>
                 <p className="mt-2 text-sm text-muted-foreground">Sharma Cosmo Clinic admin desk for appointments, patients and operations.</p>
-                <div className="mt-6 space-y-2">{sections.map((section) => { const Icon = section.icon; return <button key={section.id} onClick={() => { setActiveSection(section.id); setSidebarOpen(false); }} className={cn("flex w-full items-center gap-3 rounded-[22px] px-3 py-3 text-left transition", activeSection === section.id ? "bg-gradient-to-r from-[#f5bd5b] via-[#ffd986] to-[#fff2c7] text-foreground shadow-lg shadow-orange-200/50" : "text-muted-foreground hover:bg-[#fff5de] hover:text-foreground")}><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff5de] text-[#c2872a]"><Icon className="h-5 w-5" /></span><span className="min-w-0 flex-1"><span className="block font-medium">{section.label}</span><span className="block text-xs uppercase tracking-[0.16em] opacity-80">{section.caption}</span></span><ChevronRight className="h-4 w-4" /></button>; })}</div>
+                <div className="mt-6 min-h-0 flex-1 rounded-[30px] border border-[#f1dfb9] bg-[linear-gradient(180deg,rgba(255,252,246,0.98),rgba(255,244,219,0.92))] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_40px_-34px_rgba(124,82,17,0.35)]">
+                  <div className="h-full space-y-2 overflow-y-auto pr-1">
+                    {sections.map((section) => {
+                      const Icon = section.icon;
+                      return <button key={section.id} onClick={() => { setActiveSection(section.id); setSidebarOpen(false); }} className={cn("flex w-full items-center gap-3 rounded-[22px] px-3 py-3 text-left transition", activeSection === section.id ? "bg-gradient-to-r from-[#f5bd5b] via-[#ffd986] to-[#fff2c7] text-foreground shadow-lg shadow-orange-200/50" : "text-muted-foreground hover:bg-[#fff5de] hover:text-foreground")}><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff5de] text-[#c2872a]"><Icon className="h-5 w-5" /></span><span className="min-w-0 flex-1"><span className="block font-medium">{section.label}</span><span className="block text-xs uppercase tracking-[0.16em] opacity-80">{section.caption}</span></span><ChevronRight className="h-4 w-4" /></button>;
+                    })}
+                  </div>
+                </div>
               </aside>
               <main className="space-y-6">
                 <header className="rounded-[34px] border border-[#f0dcac] bg-[linear-gradient(90deg,rgba(246,182,84,0.95),rgba(255,222,140,0.93),rgba(255,247,214,0.96))] p-5 shadow-[0_28px_60px_-36px_rgba(125,77,13,0.45)] sm:p-6">

@@ -108,7 +108,7 @@ const ClinicInvoicePreview = ({
 
             body {
               padding: 0;
-              zoom: 0.88;
+              zoom: 0.94;
             }
 
             .print-hidden {
@@ -123,8 +123,8 @@ const ClinicInvoicePreview = ({
               border: none !important;
               background: #ffffff !important;
               padding: 0 !important;
-              break-inside: avoid !important;
-              page-break-inside: avoid !important;
+              break-inside: auto !important;
+              page-break-inside: auto !important;
             }
 
             .invoice-shell {
@@ -147,21 +147,24 @@ const ClinicInvoicePreview = ({
             .invoice-footer-grid {
               gap: 10px !important;
               margin-top: 10px !important;
-              break-inside: avoid !important;
-              page-break-inside: avoid !important;
+              break-inside: auto !important;
+              page-break-inside: auto !important;
             }
 
             .invoice-card,
             .invoice-note,
-            .invoice-summary {
+            .invoice-summary,
+            .invoice-table-row {
               padding: 12px !important;
               border-radius: 16px !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
             }
 
             .invoice-table {
               margin-top: 10px !important;
-              break-inside: avoid !important;
-              page-break-inside: avoid !important;
+              break-inside: auto !important;
+              page-break-inside: auto !important;
             }
 
             .invoice-table-head,

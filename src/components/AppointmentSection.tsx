@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { clinicContact } from "@/lib/contactDetails";
 import { slotLabelToSqlTime } from "@/lib/appointmentTime";
-import { removeLocalAppointment, saveLocalAppointment } from "@/lib/appointmentStore";
+import { buildStoredAppointmentMessage, removeLocalAppointment, saveLocalAppointment } from "@/lib/appointmentStore";
+import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, type ConsultationMode } from "@/lib/consultationMode";
 
 const services = [
   "Skin Treatment",
@@ -59,6 +60,7 @@ const AppointmentSection = () => {
     phone: "",
     email: "",
     service: "",
+    consultationMode: "offline" as ConsultationMode,
     location: "",
     date: "",
     time: "",
@@ -111,6 +113,7 @@ const AppointmentSection = () => {
       phone: "",
       email: "",
       service: "",
+      consultationMode: "offline",
       location: "",
       date: "",
       time: "",
@@ -177,10 +180,14 @@ const AppointmentSection = () => {
         location: formData.location,
         preferred_date: formData.date || null,
         preferred_time: preferredTime,
-        message: formData.message.trim() || null,
+        message: buildStoredAppointmentMessage(formData.message.trim() || null, formData.consultationMode),
       };
 
-      const localRecord = saveLocalAppointment(appointmentPayload);
+      const localRecord = saveLocalAppointment({
+        ...appointmentPayload,
+        message: formData.message.trim() || null,
+        consultation_mode: formData.consultationMode,
+      });
       void syncAppointmentToCloud(localRecord.id, appointmentPayload);
 
       setSavedMode("local");
@@ -207,6 +214,10 @@ const AppointmentSection = () => {
             <p className="text-body mb-6">
               Thank you, {formData.name}! We have saved your appointment request for{" "}
               <strong>{formData.service}</strong> at <strong>{formData.location}</strong>.
+            </p>
+            <p className="font-body text-sm text-muted-foreground mb-3">
+              Consultation mode: <strong>{getConsultationModeLabel(formData.consultationMode)}</strong> • Fee{" "}
+              <strong>Rs. {getConsultationFee(formData.consultationMode)}</strong>
             </p>
             {savedMode === "local" ? (
               <p className="font-body text-sm text-muted-foreground mb-8">
@@ -357,6 +368,23 @@ const AppointmentSection = () => {
               </div>
 
               <div>
+                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Consultation Mode *</label>
+                <select
+                  name="consultationMode"
+                  required
+                  value={formData.consultationMode}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                >
+                  {consultationModeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Location *</label>
                 <select
                   name="location"
@@ -371,6 +399,13 @@ const AppointmentSection = () => {
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className="mb-4 rounded-[1.25rem] border border-[#ead7b0] bg-[#fff8ed] px-4 py-4">
+              <p className="font-body text-xs uppercase tracking-[0.18em] text-[#a16c23]">Consultation Fee</p>
+              <p className="mt-2 font-body text-sm text-foreground">
+                {getConsultationModeLabel(formData.consultationMode)}: <strong>Rs. {getConsultationFee(formData.consultationMode)}</strong>
+              </p>
             </div>
 
             <div className="mb-4">

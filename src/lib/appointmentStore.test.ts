@@ -22,6 +22,7 @@ describe("appointment local backup store", () => {
       preferred_date: "2026-03-31",
       preferred_time: "11:00:00",
       message: "Need consultation",
+      consultation_mode: "offline",
     });
 
     expect(isLocalAppointmentId(record.id)).toBe(true);
@@ -39,6 +40,7 @@ describe("appointment local backup store", () => {
       preferred_date: null,
       preferred_time: null,
       message: null,
+      consultation_mode: "online",
     });
 
     const updated = updateLocalAppointmentStatus(record.id, "confirmed");
@@ -58,6 +60,7 @@ describe("appointment local backup store", () => {
           preferred_date: null,
           preferred_time: null,
           message: null,
+          consultation_mode: "offline",
           status: "pending",
           created_at: "2026-03-30T09:00:00.000Z",
           source: "cloud",
@@ -74,6 +77,7 @@ describe("appointment local backup store", () => {
           preferred_date: null,
           preferred_time: null,
           message: null,
+          consultation_mode: "offline",
           status: "pending",
           created_at: "2026-03-30T10:00:00.000Z",
           source: "local",
