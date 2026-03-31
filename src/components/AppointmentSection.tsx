@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { CalendarDays, CheckCircle2, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { CalendarDays, CheckCircle2, MapPin, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { clinicContact } from "@/lib/contactDetails";
@@ -277,15 +277,6 @@ const AppointmentSection = () => {
                 </div>
               </div>
 
-              <div className="glass-panel spotlight-card rounded-[1.5rem] p-5 flex items-start gap-4">
-                <ShieldCheck className="text-primary mt-1" size={24} />
-                <div>
-                  <p className="font-body font-semibold text-foreground text-sm">Priority Booking Support</p>
-                  <p className="font-body text-sm text-muted-foreground">
-                    If online sync is delayed, your request is still preserved in the admin backup queue on this browser.
-                  </p>
-                </div>
-              </div>
             </div>
 
             <a
