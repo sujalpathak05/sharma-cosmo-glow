@@ -454,7 +454,7 @@ const Admin = () => {
 
     if (activeSection === "appointments") {
       return (
-        <Panel title="Appointment queue" subtitle="Review every booking and keep the front desk moving." action={<button onClick={() => void fetchAppointments()} disabled={loading} className="inline-flex items-center gap-2 rounded-full border border-[#e8c98d] bg-white/75 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-white disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh queue</button>}>
+        <Panel title="Appointment queue" subtitle="Review every booking and keep the front desk moving." action={<button onClick={async () => { await fetchAppointments(); toast.success("Queue refreshed"); }} disabled={loading} className="inline-flex items-center gap-2 rounded-full border border-[#e8c98d] bg-white/75 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-white disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh queue</button>}>
           <div className="mb-5 flex flex-wrap items-center gap-2"><Filter className="h-4 w-4 text-muted-foreground" />{["all", "pending", "confirmed", "completed", "cancelled"].map((status) => <button key={status} onClick={() => setFilterStatus(status)} className={cn("rounded-full px-4 py-2 text-sm font-medium capitalize transition", filterStatus === status ? "bg-gradient-to-r from-[#f2aa34] to-[#eb8d45] text-white shadow-lg shadow-orange-200/60" : "bg-white/70 text-muted-foreground hover:text-foreground")}>{status}</button>)}</div>
           {renderAppointmentQueue()}
         </Panel>
