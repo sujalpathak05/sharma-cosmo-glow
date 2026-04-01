@@ -454,7 +454,7 @@ const Admin = () => {
 
     if (activeSection === "appointments") {
       return (
-        <Panel title="Appointment queue" subtitle="Review every booking and keep the front desk moving." action={<button onClick={() => void fetchAppointments()} disabled={loading} className="inline-flex items-center gap-2 rounded-full border border-[#e8c98d] bg-white/75 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-white disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh queue</button>}>
+        <Panel title="Appointment queue" subtitle="Review every booking and keep the front desk moving." action={<button onClick={async () => { await fetchAppointments(); toast.success("Queue refreshed"); }} disabled={loading} className="inline-flex items-center gap-2 rounded-full border border-[#e8c98d] bg-white/75 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-white disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh queue</button>}>
           <div className="mb-5 flex flex-wrap items-center gap-2"><Filter className="h-4 w-4 text-muted-foreground" />{["all", "pending", "confirmed", "completed", "cancelled"].map((status) => <button key={status} onClick={() => setFilterStatus(status)} className={cn("rounded-full px-4 py-2 text-sm font-medium capitalize transition", filterStatus === status ? "bg-gradient-to-r from-[#f2aa34] to-[#eb8d45] text-white shadow-lg shadow-orange-200/60" : "bg-white/70 text-muted-foreground hover:text-foreground")}>{status}</button>)}</div>
           {renderAppointmentQueue()}
         </Panel>
@@ -573,7 +573,7 @@ const Admin = () => {
                       <p className="mt-3 max-w-3xl text-sm text-[#65441b] sm:text-base">Manage doctor workflow, clinic bookings, OPD billing, pharmacy invoices, patient flow and follow-ups from a single dashboard.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <button onClick={() => void fetchAppointments()} disabled={loading} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-foreground shadow-sm disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh</button>
+                      <button onClick={async () => { await fetchAppointments(); toast.success("Dashboard refreshed successfully"); }} disabled={loading} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-foreground shadow-sm disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh</button>
                       <button onClick={() => void signOut()} className="inline-flex items-center gap-2 rounded-full bg-[#5a3b1c] px-4 py-2.5 text-sm font-medium text-white shadow-sm"><LogOut className="h-4 w-4" />Logout</button>
                     </div>
                   </div>
