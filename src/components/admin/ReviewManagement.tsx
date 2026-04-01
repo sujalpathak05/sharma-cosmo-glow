@@ -27,7 +27,16 @@ const ReviewManagement = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchReviews(); }, []);
+  useEffect(() => {
+    fetchReviews();
+    const channel = supabase
+      .channel("admin-reviews")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, () => {
+        void fetchReviews();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, []);
 
   const toggleApproval = async (id: string, approve: boolean) => {
     setUpdating(id);
