@@ -92,6 +92,8 @@ export type ClinicAdminData = {
 };
 
 const STORAGE_KEY = "sharma-cosmo-clinic-admin";
+const STORAGE_VERSION_KEY = `${STORAGE_KEY}-version`;
+const CURRENT_STORAGE_VERSION = 2;
 export const clinicAdminEventName = "clinic-admin-data-updated";
 
 const createId = () => {
@@ -131,46 +133,8 @@ const seedData: ClinicAdminData = {
     { id: "med-5", name: "AZIDERM PULS", generic: "Azelaic Acid", group: "Skin Care", manufacturer: "Micro Labs", batch: "040", expiryDate: "2026-09-01", stock: 98, location: "C-03", unitPrice: 410 },
     { id: "med-6", name: "SKINCAP SUNSCREEN 50", generic: "Sunscreen", group: "Cosmeceutical", manufacturer: "Canixa", batch: "10501", expiryDate: "2026-09-09", stock: 17, location: "C-10", unitPrice: 799 },
   ],
-  pharmacySales: [
-    { id: "sale-seed-1", invoiceNo: "20260330022", patientId: "PP1946", patientName: "Mubasir", contactNo: "9716433461", date: "2026-03-30", totalAmount: 7861, paymentStatus: "paid", type: "OPD", items: [{ medicineId: "med-1", name: "KOJIVIT ULTRA", qty: 5, price: 685 }] },
-    { id: "sale-seed-2", invoiceNo: "20260330021", patientId: "PP1945", patientName: "Priya", contactNo: "8700374260", date: "2026-03-30", totalAmount: 2335, paymentStatus: "paid", type: "OPD", items: [{ medicineId: "med-2", name: "TRANXMA GT", qty: 3, price: 525 }] },
-    { id: "sale-seed-3", invoiceNo: "20260330020", patientId: "PP1944", patientName: "Vikrant", contactNo: "9643588131", date: "2026-03-30", totalAmount: 3524, paymentStatus: "due", type: "OPD", items: [{ medicineId: "med-6", name: "SKINCAP SUNSCREEN 50", qty: 2, price: 799 }] },
-  ],
-  pharmacyPurchases: [
-    {
-      id: "purchase-seed-1",
-      invoiceNo: "20260330002",
-      supplierId: "SP-202503001",
-      supplierName: "Sharma Pharmacy",
-      contactNo: "8556263132",
-      date: "2026-03-30",
-      amount: 325000,
-      paymentStatus: "partial",
-      items: [{ medicineId: "med-1", name: "KOJIVIT ULTRA", qty: 100, price: 3250 }],
-    },
-    {
-      id: "purchase-seed-2",
-      invoiceNo: "20260330001",
-      supplierId: "SP-202503001",
-      supplierName: "Sharma Pharmacy",
-      contactNo: "8556263132",
-      date: "2026-03-30",
-      amount: 180000,
-      paymentStatus: "partial",
-      items: [{ medicineId: "med-2", name: "TRANXMA GT", qty: 80, price: 2250 }],
-    },
-    {
-      id: "purchase-seed-3",
-      invoiceNo: "20260329001",
-      supplierId: "SP-202503001",
-      supplierName: "Sharma Pharmacy",
-      contactNo: "8556263132",
-      date: "2026-03-29",
-      amount: 6000,
-      paymentStatus: "paid",
-      items: [{ medicineId: "med-4", name: "FOLVITE 5 MG", qty: 40, price: 150 }],
-    },
-  ],
+  pharmacySales: [],
+  pharmacyPurchases: [],
 };
 
 const canUseStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -275,7 +239,7 @@ const normalizeClinicAdminData = (value?: Partial<ClinicAdminData> | null): Clin
   opdBills: Array.isArray(value?.opdBills) && value?.opdBills.length > 0
     ? value.opdBills.map((bill, index) => normalizeOpdBill(bill, index))
     : seedData.opdBills.map((bill, index) => normalizeOpdBill(bill, index)),
-  pharmacyMedicines: Array.isArray(value?.pharmacyMedicines) && value?.pharmacyMedicines.length > 0
+  pharmacyMedicines: Array.isArray(value?.pharmacyMedicines)
     ? value.pharmacyMedicines.map((medicine, index) => normalizePharmacyMedicine(medicine, index))
     : seedData.pharmacyMedicines.map((medicine, index) => normalizePharmacyMedicine(medicine, index)),
   pharmacySales: Array.isArray(value?.pharmacySales)
@@ -292,9 +256,24 @@ export const readClinicAdminData = () => {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seedData));
+      window.localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
       return seedData;
     }
-    return normalizeClinicAdminData(JSON.parse(raw) as Partial<ClinicAdminData>);
+    const parsed = normalizeClinicAdminData(JSON.parse(raw) as Partial<ClinicAdminData>);
+    const storedVersion = Number(window.localStorage.getItem(STORAGE_VERSION_KEY) ?? "1");
+
+    if (storedVersion < CURRENT_STORAGE_VERSION) {
+      const migratedData = normalizeClinicAdminData({
+        ...parsed,
+        pharmacySales: [],
+        pharmacyPurchases: [],
+      });
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedData));
+      window.localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
+      return migratedData;
+    }
+
+    return parsed;
   } catch {
     return seedData;
   }
@@ -303,6 +282,7 @@ export const readClinicAdminData = () => {
 export const saveClinicAdminData = (data: ClinicAdminData) => {
   if (!canUseStorage()) return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeClinicAdminData(data)));
+  window.localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
   window.dispatchEvent(new CustomEvent(clinicAdminEventName));
 };
 
@@ -370,6 +350,22 @@ export const addPharmacyMedicine = (medicine: Omit<PharmacyMedicine, "id">) => {
   const nextData = { ...data, pharmacyMedicines: [nextMedicine, ...data.pharmacyMedicines] };
   saveClinicAdminData(nextData);
   return nextMedicine;
+};
+
+export const deletePharmacyMedicine = (medicineId: string) => {
+  const data = readClinicAdminData();
+  const medicine = data.pharmacyMedicines.find((entry) => entry.id === medicineId);
+
+  if (!medicine) {
+    throw new Error("Medicine not found.");
+  }
+
+  const nextData = {
+    ...data,
+    pharmacyMedicines: data.pharmacyMedicines.filter((entry) => entry.id !== medicineId),
+  };
+  saveClinicAdminData(nextData);
+  return medicine;
 };
 
 export const createPharmacySaleInvoice = (invoice: Omit<PharmacySaleInvoice, "id" | "invoiceNo" | "totalAmount">) => {

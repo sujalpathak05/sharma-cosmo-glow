@@ -17,7 +17,7 @@ const jsonLd = {
   "@type": "MedicalClinic",
   "name": "Sharma Cosmo Clinic",
   "description": "Best skin clinic & cosmetology center in Noida offering hair treatment, acne care, pigmentation solutions, laser procedures, anti-aging services by Dr. Visi Kant Sharma.",
-  "url": "https://sharmacosmo.com",
+  "url": "https://sharmacosmoclinic.com",
   "telephone": clinicContact.phoneDisplay,
   "email": clinicContact.email,
   "address": {
@@ -49,11 +49,11 @@ const Index = () => {
           name="keywords"
           content="Sharma Cosmo Clinic, skin clinic Noida, hair treatment Noida, acne treatment Noida, pigmentation treatment, PRP hair therapy, laser treatment Noida, anti-aging Noida, dermatologist Noida, Dr. Visi Kant Sharma, best skin doctor Noida, cosmetology Noida"
         />
-        <link rel="canonical" href="https://sharmacosmo.com" />
+        <link rel="canonical" href="https://sharmacosmoclinic.com" />
         <meta property="og:title" content="Sharma Cosmo Clinic Noida | Best Skin & Hair Treatment" />
         <meta property="og:description" content="Best skin clinic in Noida. Hair fall, acne, pigmentation, laser & anti-aging treatment by Dr. Visi Kant Sharma." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://sharmacosmo.com" />
+        <meta property="og:url" content="https://sharmacosmoclinic.com" />
         <meta name="twitter:title" content="Sharma Cosmo Clinic Noida | Best Skin & Hair Treatment" />
         <meta name="twitter:description" content="Best skin clinic in Noida. Hair fall, acne, pigmentation, laser & anti-aging treatment by Dr. Visi Kant Sharma." />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
