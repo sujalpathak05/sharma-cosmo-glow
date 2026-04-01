@@ -56,6 +56,24 @@ export type Database = {
         }
         Relationships: []
       }
+      clinic_admin_state: {
+        Row: {
+          id: string
+          payload: Json | null
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          payload?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          payload?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       disabled_slots: {
         Row: {
           created_at: string
