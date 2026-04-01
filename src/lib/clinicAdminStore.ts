@@ -1,3 +1,7 @@
+import type { RealtimeChannel } from "@supabase/supabase-js";
+
+import { supabase } from "@/integrations/supabase/client";
+import type { Json, Tables } from "@/integrations/supabase/types";
 import { clinicBrand } from "@/lib/clinicBrand";
 import { getConsultationFee, normalizeConsultationMode, type ConsultationMode } from "@/lib/consultationMode";
 
@@ -137,7 +141,18 @@ const seedData: ClinicAdminData = {
   pharmacyPurchases: [],
 };
 
+type ClinicAdminStateRow = Tables<"clinic_admin_state">;
+type ClinicAdminMutationPlan<T> = { result: T; nextData: ClinicAdminData } | { result: T; skip: true };
+
+const CLINIC_ADMIN_STATE_ID = "primary";
+const CLINIC_ADMIN_WRITE_RETRIES = 4;
 const canUseStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
+
+let clinicAdminCache = seedData;
+let clinicAdminCacheHydrated = false;
+let clinicAdminChannel: RealtimeChannel | null = null;
+let clinicAdminSubscriberCount = 0;
 
 const normalizeOpdBillItem = (item: Partial<OpdBillItem> | null | undefined): OpdBillItem => ({
   label: typeof item?.label === "string" && item.label.trim() ? item.label : "Consultation",
@@ -250,14 +265,14 @@ const normalizeClinicAdminData = (value?: Partial<ClinicAdminData> | null): Clin
     : seedData.pharmacyPurchases.map((invoice, index) => normalizePharmacyPurchase(invoice, index)),
 });
 
-export const readClinicAdminData = () => {
-  if (!canUseStorage()) return seedData;
+const readStoredClinicAdminData = () => {
+  if (!canUseStorage()) return normalizeClinicAdminData(seedData);
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seedData));
       window.localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
-      return seedData;
+      return normalizeClinicAdminData(seedData);
     }
     const parsed = normalizeClinicAdminData(JSON.parse(raw) as Partial<ClinicAdminData>);
     const storedVersion = Number(window.localStorage.getItem(STORAGE_VERSION_KEY) ?? "1");
@@ -275,15 +290,175 @@ export const readClinicAdminData = () => {
 
     return parsed;
   } catch {
-    return seedData;
+    return normalizeClinicAdminData(seedData);
   }
 };
 
-export const saveClinicAdminData = (data: ClinicAdminData) => {
-  if (!canUseStorage()) return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeClinicAdminData(data)));
-  window.localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
-  window.dispatchEvent(new CustomEvent(clinicAdminEventName));
+const writeClinicAdminCache = (data: ClinicAdminData, options?: { emit?: boolean }) => {
+  const normalized = normalizeClinicAdminData(data);
+  clinicAdminCache = normalized;
+  clinicAdminCacheHydrated = true;
+
+  if (canUseStorage()) {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    window.localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
+  }
+
+  if (options?.emit !== false && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(clinicAdminEventName));
+  }
+
+  return normalized;
+};
+
+const isSeedClinicAdminData = (data: ClinicAdminData) =>
+  JSON.stringify(normalizeClinicAdminData(data)) === JSON.stringify(normalizeClinicAdminData(seedData));
+
+const payloadToClinicAdminData = (payload: Json | null | undefined) =>
+  normalizeClinicAdminData(isRecord(payload) ? payload as Partial<ClinicAdminData> : null);
+
+const fetchClinicAdminStateRow = async () => {
+  const { data, error } = await supabase
+    .from("clinic_admin_state")
+    .select("id, payload, updated_at")
+    .eq("id", CLINIC_ADMIN_STATE_ID)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (data) return data as ClinicAdminStateRow;
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("clinic_admin_state")
+    .upsert({
+      id: CLINIC_ADMIN_STATE_ID,
+      payload: {} as Json,
+    })
+    .select("id, payload, updated_at")
+    .maybeSingle();
+
+  if (insertError) {
+    throw insertError;
+  }
+
+  if (!inserted) {
+    throw new Error("Unable to initialize clinic admin state.");
+  }
+
+  return inserted as ClinicAdminStateRow;
+};
+
+const bootstrapCloudClinicAdminState = async (row: ClinicAdminStateRow) => {
+  const localData = readStoredClinicAdminData();
+  if (Object.keys(isRecord(row.payload) ? row.payload : {}).length > 0 || isSeedClinicAdminData(localData)) {
+    return row;
+  }
+
+  const { data, error } = await supabase
+    .from("clinic_admin_state")
+    .update({ payload: normalizeClinicAdminData(localData) as unknown as Json })
+    .eq("id", CLINIC_ADMIN_STATE_ID)
+    .eq("updated_at", row.updated_at)
+    .select("id, payload, updated_at")
+    .maybeSingle();
+
+  if (error || !data) {
+    return row;
+  }
+
+  return data as ClinicAdminStateRow;
+};
+
+export const readClinicAdminData = () => {
+  if (!clinicAdminCacheHydrated) {
+    clinicAdminCache = readStoredClinicAdminData();
+    clinicAdminCacheHydrated = true;
+  }
+
+  return clinicAdminCache;
+};
+
+export const loadClinicAdminDataFromCloud = async () => {
+  try {
+    const row = await bootstrapCloudClinicAdminState(await fetchClinicAdminStateRow());
+    return writeClinicAdminCache(payloadToClinicAdminData(row.payload));
+  } catch {
+    return readClinicAdminData();
+  }
+};
+
+export const subscribeClinicAdminData = (listener: () => void) => {
+  if (typeof window !== "undefined") {
+    window.addEventListener(clinicAdminEventName, listener);
+    window.addEventListener("storage", listener);
+  }
+
+  clinicAdminSubscriberCount += 1;
+  if (clinicAdminSubscriberCount === 1) {
+    void loadClinicAdminDataFromCloud();
+    clinicAdminChannel = supabase
+      .channel("clinic-admin-state")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "clinic_admin_state",
+          filter: `id=eq.${CLINIC_ADMIN_STATE_ID}`,
+        },
+        () => {
+          void loadClinicAdminDataFromCloud();
+        },
+      )
+      .subscribe();
+  }
+
+  return () => {
+    if (typeof window !== "undefined") {
+      window.removeEventListener(clinicAdminEventName, listener);
+      window.removeEventListener("storage", listener);
+    }
+
+    clinicAdminSubscriberCount = Math.max(0, clinicAdminSubscriberCount - 1);
+    if (clinicAdminSubscriberCount === 0 && clinicAdminChannel) {
+      void supabase.removeChannel(clinicAdminChannel);
+      clinicAdminChannel = null;
+    }
+  };
+};
+
+const mutateClinicAdminData = async <T>(mutator: (current: ClinicAdminData) => ClinicAdminMutationPlan<T>) => {
+  for (let attempt = 0; attempt < CLINIC_ADMIN_WRITE_RETRIES; attempt += 1) {
+    const row = await fetchClinicAdminStateRow();
+    const current = payloadToClinicAdminData(row.payload);
+    const plan = mutator(current);
+
+    if ("skip" in plan) {
+      writeClinicAdminCache(current, { emit: false });
+      return plan.result;
+    }
+
+    const { data, error } = await supabase
+      .from("clinic_admin_state")
+      .update({ payload: normalizeClinicAdminData(plan.nextData) as unknown as Json })
+      .eq("id", CLINIC_ADMIN_STATE_ID)
+      .eq("updated_at", row.updated_at)
+      .select("id, payload, updated_at")
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (data) {
+      writeClinicAdminCache(payloadToClinicAdminData((data as ClinicAdminStateRow).payload));
+      return plan.result;
+    }
+  }
+
+  throw new Error("Clinic data changed in another tab. Please try again.");
 };
 
 export const createPatientId = (phone: string) => `PAT${phone.slice(-4).padStart(4, "0")}`;
@@ -294,179 +469,214 @@ export const findOpdBillByAppointmentId = (appointmentId: string) =>
 export const findOpdBillById = (billId: string) =>
   readClinicAdminData().opdBills.find((bill) => bill.id === billId) ?? null;
 
-export const createOpdBillRecord = (bill: Omit<OpdBill, "id" | "billNo">) => {
-  const data = readClinicAdminData();
-  const existingBill = bill.appointmentId ? data.opdBills.find((item) => item.appointmentId === bill.appointmentId) : null;
-  if (existingBill) return existingBill;
+export const createOpdBillRecord = async (bill: Omit<OpdBill, "id" | "billNo">) =>
+  mutateClinicAdminData<OpdBill>((data) => {
+    const existingBill = bill.appointmentId ? data.opdBills.find((item) => item.appointmentId === bill.appointmentId) : null;
+    if (existingBill) return { result: existingBill, skip: true };
 
-  const nextBill: OpdBill = normalizeOpdBill(
-    {
-      ...bill,
+    const nextBill: OpdBill = normalizeOpdBill(
+      {
+        ...bill,
+        id: createId(),
+        billNo: `INV_${String(data.opdBills.length + 55).padStart(4, "0")}`,
+      },
+      data.opdBills.length,
+    );
+
+    return {
+      result: nextBill,
+      nextData: { ...data, opdBills: [nextBill, ...data.opdBills] },
+    };
+  });
+
+export const updateOpdBillRecord = async (billId: string, patch: Partial<Omit<OpdBill, "id" | "billNo">>) =>
+  mutateClinicAdminData<OpdBill>((data) => {
+    const index = data.opdBills.findIndex((bill) => bill.id === billId);
+    if (index === -1) {
+      throw new Error("Bill not found.");
+    }
+
+    const current = data.opdBills[index];
+    const nextBill = normalizeOpdBill(
+      {
+        ...current,
+        ...patch,
+        id: current.id,
+        billNo: current.billNo,
+      },
+      index,
+    );
+
+    if (
+      nextBill.appointmentId &&
+      data.opdBills.some((bill) => bill.appointmentId === nextBill.appointmentId && bill.id !== billId)
+    ) {
+      throw new Error("This appointment already has another OPD bill.");
+    }
+
+    const nextBills = [...data.opdBills];
+    nextBills[index] = nextBill;
+
+    return {
+      result: nextBill,
+      nextData: { ...data, opdBills: nextBills },
+    };
+  });
+
+export const addPharmacyMedicine = async (medicine: Omit<PharmacyMedicine, "id">) =>
+  mutateClinicAdminData<PharmacyMedicine>((data) => {
+    const nextMedicine = normalizePharmacyMedicine({ ...medicine, id: createId() }, data.pharmacyMedicines.length);
+    return {
+      result: nextMedicine,
+      nextData: { ...data, pharmacyMedicines: [nextMedicine, ...data.pharmacyMedicines] },
+    };
+  });
+
+export const updatePharmacyMedicine = async (medicineId: string, patch: Omit<PharmacyMedicine, "id">) =>
+  mutateClinicAdminData<PharmacyMedicine>((data) => {
+    const index = data.pharmacyMedicines.findIndex((medicine) => medicine.id === medicineId);
+
+    if (index === -1) {
+      throw new Error("Medicine not found.");
+    }
+
+    const current = data.pharmacyMedicines[index];
+    const nextMedicine = normalizePharmacyMedicine(
+      {
+        ...current,
+        ...patch,
+        id: current.id,
+      },
+      index,
+    );
+
+    const nextMedicines = [...data.pharmacyMedicines];
+    nextMedicines[index] = nextMedicine;
+
+    return {
+      result: nextMedicine,
+      nextData: { ...data, pharmacyMedicines: nextMedicines },
+    };
+  });
+
+export const deletePharmacyMedicine = async (medicineId: string) =>
+  mutateClinicAdminData<PharmacyMedicine>((data) => {
+    const medicine = data.pharmacyMedicines.find((entry) => entry.id === medicineId);
+
+    if (!medicine) {
+      throw new Error("Medicine not found.");
+    }
+
+    return {
+      result: medicine,
+      nextData: {
+        ...data,
+        pharmacyMedicines: data.pharmacyMedicines.filter((entry) => entry.id !== medicineId),
+      },
+    };
+  });
+
+export const createPharmacySaleInvoice = async (invoice: Omit<PharmacySaleInvoice, "id" | "invoiceNo" | "totalAmount">) =>
+  mutateClinicAdminData<PharmacySaleInvoice>((data) => {
+    const itemsMap = new Map<string, PharmacySaleItem>();
+
+    invoice.items.forEach((item) => {
+      if (!item.medicineId || item.qty <= 0) return;
+      const existing = itemsMap.get(item.medicineId);
+      if (existing) {
+        itemsMap.set(item.medicineId, { ...existing, qty: existing.qty + item.qty });
+        return;
+      }
+      itemsMap.set(item.medicineId, { ...item });
+    });
+
+    const normalizedItems = Array.from(itemsMap.values());
+    if (normalizedItems.length === 0) {
+      throw new Error("At least one medicine is required.");
+    }
+
+    normalizedItems.forEach((item) => {
+      const medicine = data.pharmacyMedicines.find((entry) => entry.id === item.medicineId);
+      if (!medicine) {
+        throw new Error(`Medicine not found for ${item.name}.`);
+      }
+      if (item.qty > medicine.stock) {
+        throw new Error(`${medicine.name} has only ${medicine.stock} units in stock.`);
+      }
+    });
+
+    const totalAmount = normalizedItems.reduce((sum, item) => sum + item.qty * item.price, 0);
+    const nextInvoice: PharmacySaleInvoice = {
+      ...invoice,
       id: createId(),
-      billNo: `INV_${String(data.opdBills.length + 55).padStart(4, "0")}`,
-    },
-    data.opdBills.length,
-  );
+      invoiceNo: `${new Date().getFullYear()}${String(data.pharmacySales.length + 30001).padStart(7, "0")}`,
+      totalAmount,
+      items: normalizedItems,
+    };
 
-  const nextData = { ...data, opdBills: [nextBill, ...data.opdBills] };
-  saveClinicAdminData(nextData);
-  return nextBill;
-};
+    const updatedMedicines = data.pharmacyMedicines.map((medicine) => {
+      const soldItem = normalizedItems.find((item) => item.medicineId === medicine.id);
+      return soldItem ? { ...medicine, stock: Math.max(0, medicine.stock - soldItem.qty) } : medicine;
+    });
 
-export const updateOpdBillRecord = (billId: string, patch: Partial<Omit<OpdBill, "id" | "billNo">>) => {
-  const data = readClinicAdminData();
-  const index = data.opdBills.findIndex((bill) => bill.id === billId);
-  if (index === -1) {
-    throw new Error("Bill not found.");
-  }
-
-  const current = data.opdBills[index];
-  const nextBill = normalizeOpdBill(
-    {
-      ...current,
-      ...patch,
-      id: current.id,
-      billNo: current.billNo,
-    },
-    index,
-  );
-
-  if (
-    nextBill.appointmentId &&
-    data.opdBills.some((bill) => bill.appointmentId === nextBill.appointmentId && bill.id !== billId)
-  ) {
-    throw new Error("This appointment already has another OPD bill.");
-  }
-
-  const nextBills = [...data.opdBills];
-  nextBills[index] = nextBill;
-  saveClinicAdminData({ ...data, opdBills: nextBills });
-  return nextBill;
-};
-
-export const addPharmacyMedicine = (medicine: Omit<PharmacyMedicine, "id">) => {
-  const data = readClinicAdminData();
-  const nextMedicine = normalizePharmacyMedicine({ ...medicine, id: createId() }, data.pharmacyMedicines.length);
-  const nextData = { ...data, pharmacyMedicines: [nextMedicine, ...data.pharmacyMedicines] };
-  saveClinicAdminData(nextData);
-  return nextMedicine;
-};
-
-export const deletePharmacyMedicine = (medicineId: string) => {
-  const data = readClinicAdminData();
-  const medicine = data.pharmacyMedicines.find((entry) => entry.id === medicineId);
-
-  if (!medicine) {
-    throw new Error("Medicine not found.");
-  }
-
-  const nextData = {
-    ...data,
-    pharmacyMedicines: data.pharmacyMedicines.filter((entry) => entry.id !== medicineId),
-  };
-  saveClinicAdminData(nextData);
-  return medicine;
-};
-
-export const createPharmacySaleInvoice = (invoice: Omit<PharmacySaleInvoice, "id" | "invoiceNo" | "totalAmount">) => {
-  const data = readClinicAdminData();
-  const itemsMap = new Map<string, PharmacySaleItem>();
-
-  invoice.items.forEach((item) => {
-    if (!item.medicineId || item.qty <= 0) return;
-    const existing = itemsMap.get(item.medicineId);
-    if (existing) {
-      itemsMap.set(item.medicineId, { ...existing, qty: existing.qty + item.qty });
-      return;
-    }
-    itemsMap.set(item.medicineId, { ...item });
+    return {
+      result: nextInvoice,
+      nextData: {
+        ...data,
+        pharmacyMedicines: updatedMedicines,
+        pharmacySales: [nextInvoice, ...data.pharmacySales],
+      },
+    };
   });
 
-  const normalizedItems = Array.from(itemsMap.values());
-  if (normalizedItems.length === 0) {
-    throw new Error("At least one medicine is required.");
-  }
-
-  normalizedItems.forEach((item) => {
-    const medicine = data.pharmacyMedicines.find((entry) => entry.id === item.medicineId);
-    if (!medicine) {
-      throw new Error(`Medicine not found for ${item.name}.`);
-    }
-    if (item.qty > medicine.stock) {
-      throw new Error(`${medicine.name} has only ${medicine.stock} units in stock.`);
-    }
-  });
-
-  const totalAmount = normalizedItems.reduce((sum, item) => sum + item.qty * item.price, 0);
-  const nextInvoice: PharmacySaleInvoice = {
-    ...invoice,
-    id: createId(),
-    invoiceNo: `${new Date().getFullYear()}${String(data.pharmacySales.length + 30001).padStart(7, "0")}`,
-    totalAmount,
-    items: normalizedItems,
-  };
-
-  const updatedMedicines = data.pharmacyMedicines.map((medicine) => {
-    const soldItem = normalizedItems.find((item) => item.medicineId === medicine.id);
-    return soldItem ? { ...medicine, stock: Math.max(0, medicine.stock - soldItem.qty) } : medicine;
-  });
-
-  const nextData = {
-    ...data,
-    pharmacyMedicines: updatedMedicines,
-    pharmacySales: [nextInvoice, ...data.pharmacySales],
-  };
-  saveClinicAdminData(nextData);
-  return nextInvoice;
-};
-
-export const addPharmacyPurchaseInvoice = (
+export const addPharmacyPurchaseInvoice = async (
   invoice: Omit<PharmacyPurchaseInvoice, "id" | "invoiceNo" | "amount">,
-) => {
-  const data = readClinicAdminData();
-  const itemsMap = new Map<string, PharmacyPurchaseItem>();
+) =>
+  mutateClinicAdminData<PharmacyPurchaseInvoice>((data) => {
+    const itemsMap = new Map<string, PharmacyPurchaseItem>();
 
-  invoice.items.forEach((item) => {
-    if (!item.medicineId || item.qty <= 0) return;
-    const existing = itemsMap.get(item.medicineId);
-    if (existing) {
-      itemsMap.set(item.medicineId, { ...existing, qty: existing.qty + item.qty });
-      return;
+    invoice.items.forEach((item) => {
+      if (!item.medicineId || item.qty <= 0) return;
+      const existing = itemsMap.get(item.medicineId);
+      if (existing) {
+        itemsMap.set(item.medicineId, { ...existing, qty: existing.qty + item.qty });
+        return;
+      }
+      itemsMap.set(item.medicineId, { ...item });
+    });
+
+    const normalizedItems = Array.from(itemsMap.values());
+    if (normalizedItems.length === 0) {
+      throw new Error("At least one medicine is required.");
     }
-    itemsMap.set(item.medicineId, { ...item });
+
+    normalizedItems.forEach((item) => {
+      const medicine = data.pharmacyMedicines.find((entry) => entry.id === item.medicineId);
+      if (!medicine) {
+        throw new Error(`Medicine not found for ${item.name}. Add it in master first.`);
+      }
+    });
+
+    const amount = normalizedItems.reduce((sum, item) => sum + item.qty * item.price, 0);
+    const nextInvoice: PharmacyPurchaseInvoice = {
+      ...invoice,
+      id: createId(),
+      invoiceNo: `${new Date().getFullYear()}${String(data.pharmacyPurchases.length + 3001).padStart(6, "0")}`,
+      amount,
+      items: normalizedItems,
+    };
+
+    const updatedMedicines = data.pharmacyMedicines.map((medicine) => {
+      const purchasedItem = normalizedItems.find((item) => item.medicineId === medicine.id);
+      return purchasedItem ? { ...medicine, stock: medicine.stock + purchasedItem.qty } : medicine;
+    });
+
+    return {
+      result: nextInvoice,
+      nextData: {
+        ...data,
+        pharmacyMedicines: updatedMedicines,
+        pharmacyPurchases: [nextInvoice, ...data.pharmacyPurchases],
+      },
+    };
   });
-
-  const normalizedItems = Array.from(itemsMap.values());
-  if (normalizedItems.length === 0) {
-    throw new Error("At least one medicine is required.");
-  }
-
-  normalizedItems.forEach((item) => {
-    const medicine = data.pharmacyMedicines.find((entry) => entry.id === item.medicineId);
-    if (!medicine) {
-      throw new Error(`Medicine not found for ${item.name}. Add it in master first.`);
-    }
-  });
-
-  const amount = normalizedItems.reduce((sum, item) => sum + item.qty * item.price, 0);
-  const nextInvoice: PharmacyPurchaseInvoice = {
-    ...invoice,
-    id: createId(),
-    invoiceNo: `${new Date().getFullYear()}${String(data.pharmacyPurchases.length + 3001).padStart(6, "0")}`,
-    amount,
-    items: normalizedItems,
-  };
-
-  const updatedMedicines = data.pharmacyMedicines.map((medicine) => {
-    const purchasedItem = normalizedItems.find((item) => item.medicineId === medicine.id);
-    return purchasedItem ? { ...medicine, stock: medicine.stock + purchasedItem.qty } : medicine;
-  });
-
-  const nextData = {
-    ...data,
-    pharmacyMedicines: updatedMedicines,
-    pharmacyPurchases: [nextInvoice, ...data.pharmacyPurchases],
-  };
-  saveClinicAdminData(nextData);
-  return nextInvoice;
-};

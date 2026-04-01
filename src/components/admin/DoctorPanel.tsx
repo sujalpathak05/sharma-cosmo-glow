@@ -3,7 +3,7 @@ import { CalendarDays, Search } from "lucide-react";
 
 import { sqlTimeToSlotLabel } from "@/lib/appointmentTime";
 import type { AppointmentRecord } from "@/lib/appointmentStore";
-import { clinicAdminEventName, createPatientId, readClinicAdminData } from "@/lib/clinicAdminStore";
+import { createPatientId, readClinicAdminData, subscribeClinicAdminData } from "@/lib/clinicAdminStore";
 import { getConsultationModeLabel } from "@/lib/consultationMode";
 import { cn } from "@/lib/utils";
 
@@ -36,13 +36,7 @@ const DoctorPanel = ({ appointments, onGenerateBill, onConsult }: DoctorPanelPro
     };
 
     syncBills();
-    window.addEventListener(clinicAdminEventName, syncBills);
-    window.addEventListener("storage", syncBills);
-
-    return () => {
-      window.removeEventListener(clinicAdminEventName, syncBills);
-      window.removeEventListener("storage", syncBills);
-    };
+    return subscribeClinicAdminData(syncBills);
   }, [appointments]);
 
   const monthLabel = new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" });

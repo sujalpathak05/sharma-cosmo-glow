@@ -4,12 +4,12 @@ import { toast } from "sonner";
 
 import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
 import {
-  clinicAdminEventName,
   type OpdBill,
   createOpdBillRecord,
   createPatientId,
   findOpdBillByAppointmentId,
   readClinicAdminData,
+  subscribeClinicAdminData,
   updateOpdBillRecord,
 } from "@/lib/clinicAdminStore";
 import type { AppointmentRecord } from "@/lib/appointmentStore";
@@ -95,13 +95,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
     const syncData = () => setData(readClinicAdminData());
 
     syncData();
-    window.addEventListener(clinicAdminEventName, syncData);
-    window.addEventListener("storage", syncData);
-
-    return () => {
-      window.removeEventListener(clinicAdminEventName, syncData);
-      window.removeEventListener("storage", syncData);
-    };
+    return subscribeClinicAdminData(syncData);
   }, []);
 
   const applyAppointmentDraft = (appointment: AppointmentRecord, options?: { keepExistingDate?: boolean }) => {
@@ -191,7 +185,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
     );
   }, [data.opdBills, historySearch]);
 
-  const saveBill = () => {
+  const saveBill = async () => {
     if (!draft.patientName.trim() || !draft.phone.trim()) {
       toast.error("Patient name and phone are required.");
       return;
@@ -243,8 +237,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
     };
 
     try {
-      const bill = activeBillId ? updateOpdBillRecord(activeBillId, payload) : createOpdBillRecord(payload);
-      setData(readClinicAdminData());
+      const bill = activeBillId ? await updateOpdBillRecord(activeBillId, payload) : await createOpdBillRecord(payload);
       setActiveBillId(bill.id);
       setSelectedAppointmentId(bill.appointmentId ?? "");
       toast.success(activeBillId ? `OPD bill ${bill.billNo} updated.` : `OPD bill ${bill.billNo} created.`);

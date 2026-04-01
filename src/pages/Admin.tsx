@@ -239,11 +239,26 @@ const Admin = () => {
     if (!session) return;
     void fetchAppointments();
     const sync = () => void fetchAppointments();
+    const appointmentsChannel = supabase
+      .channel("admin-appointments")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "appointments",
+        },
+        () => {
+          void fetchAppointments();
+        },
+      )
+      .subscribe();
     window.addEventListener("storage", sync);
     window.addEventListener(localAppointmentsEventName, sync);
     return () => {
       window.removeEventListener("storage", sync);
       window.removeEventListener(localAppointmentsEventName, sync);
+      void supabase.removeChannel(appointmentsChannel);
     };
   }, [session]);
 

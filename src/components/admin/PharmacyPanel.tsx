@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
 import {
   addPharmacyMedicine,
   addPharmacyPurchaseInvoice,
-  clinicAdminEventName,
   createPatientId,
   createPharmacySaleInvoice,
   deletePharmacyMedicine,
   readClinicAdminData,
+  subscribeClinicAdminData,
+  updatePharmacyMedicine,
   type ClinicAdminData,
+  type PharmacyMedicine,
 } from "@/lib/clinicAdminStore";
 import type { AppointmentRecord } from "@/lib/appointmentStore";
 import { clinicBrand } from "@/lib/clinicBrand";
@@ -23,10 +25,33 @@ type PharmacyPanelProps = {
 
 type PharmacyView = "dashboard" | "masters" | "stock" | "sales" | "purchase" | "reports";
 type ItemRow = { key: string; medicineId: string; qty: string; price: string };
+type MedicineFormState = {
+  name: string;
+  generic: string;
+  group: string;
+  manufacturer: string;
+  batch: string;
+  expiryDate: string;
+  stock: string;
+  location: string;
+  unitPrice: string;
+};
 
 const formatMoney = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 const formatDate = (value: string) => new Date(`${value}T10:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 const createItemRow = (): ItemRow => ({ key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, medicineId: "", qty: "1", price: "" });
+const emptyMedicineForm = (): MedicineFormState => ({ name: "", generic: "", group: "", manufacturer: "", batch: "", expiryDate: "", stock: "", location: "", unitPrice: "" });
+const mapMedicineToForm = (medicine: PharmacyMedicine): MedicineFormState => ({
+  name: medicine.name,
+  generic: medicine.generic,
+  group: medicine.group,
+  manufacturer: medicine.manufacturer,
+  batch: medicine.batch,
+  expiryDate: medicine.expiryDate,
+  stock: String(medicine.stock),
+  location: medicine.location,
+  unitPrice: String(medicine.unitPrice),
+});
 
 const Surface = ({ children }: { children: ReactNode }) => (
   <section className="glass-panel rounded-[30px] border border-[#f0ddb8] bg-white/70 p-5 shadow-[0_24px_60px_-42px_rgba(79,51,8,0.34)] sm:p-6">{children}</section>
@@ -48,19 +73,15 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [selectedSaleId, setSelectedSaleId] = useState<string | null>(readClinicAdminData().pharmacySales[0]?.id ?? null);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(readClinicAdminData().pharmacyPurchases[0]?.id ?? null);
-  const [medicineForm, setMedicineForm] = useState({ name: "", generic: "", group: "", manufacturer: "", batch: "", expiryDate: "", stock: "", location: "", unitPrice: "" });
+  const [editingMedicineId, setEditingMedicineId] = useState<string | null>(null);
+  const [medicineForm, setMedicineForm] = useState<MedicineFormState>(emptyMedicineForm());
   const [saleForm, setSaleForm] = useState({ patientName: "", contactNo: "", type: "OTC" as "OPD" | "OTC", items: [createItemRow()] });
   const [purchaseForm, setPurchaseForm] = useState({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid" as "paid" | "partial" | "due", items: [createItemRow()] });
 
   useEffect(() => {
     const syncData = () => setData(readClinicAdminData());
     syncData();
-    window.addEventListener(clinicAdminEventName, syncData);
-    window.addEventListener("storage", syncData);
-    return () => {
-      window.removeEventListener(clinicAdminEventName, syncData);
-      window.removeEventListener("storage", syncData);
-    };
+    return subscribeClinicAdminData(syncData);
   }, []);
 
   const term = search.trim().toLowerCase();
@@ -92,7 +113,10 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
   const saleDraftTotal = salePreviewItems.reduce((sum, item) => sum + item.total, 0);
   const purchaseDraftTotal = purchasePreviewItems.reduce((sum, item) => sum + item.total, 0);
 
-  const resetMedicineForm = () => setMedicineForm({ name: "", generic: "", group: "", manufacturer: "", batch: "", expiryDate: "", stock: "", location: "", unitPrice: "" });
+  const resetMedicineForm = () => {
+    setEditingMedicineId(null);
+    setMedicineForm(emptyMedicineForm());
+  };
   const resetSaleForm = () => setSaleForm({ patientName: "", contactNo: "", type: "OTC", items: [createItemRow()] });
   const resetPurchaseForm = () => setPurchaseForm({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid", items: [createItemRow()] });
 
@@ -120,12 +144,12 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
     setPurchaseForm((current) => ({ ...current, items: current.items.length > 1 ? current.items.filter((item) => item.key !== key) : [createItemRow()] }));
   };
 
-  const saveMedicine = () => {
+  const saveMedicine = async () => {
     if (!medicineForm.name.trim() || !medicineForm.expiryDate || !medicineForm.stock || !medicineForm.unitPrice) {
       toast.error("Fill medicine name, expiry, stock and price.");
       return;
     }
-    addPharmacyMedicine({
+    const payload = {
       name: medicineForm.name.trim(),
       generic: medicineForm.generic.trim() || "-",
       group: medicineForm.group.trim() || "-",
@@ -135,28 +159,47 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
       stock: Number(medicineForm.stock),
       location: medicineForm.location.trim() || "Main Rack",
       unitPrice: Number(medicineForm.unitPrice),
-    });
-    setData(readClinicAdminData());
-    setShowMedicineForm(false);
-    resetMedicineForm();
-    toast.success("Medicine added to pharmacy master.");
+    };
+
+    try {
+      if (editingMedicineId) {
+        await updatePharmacyMedicine(editingMedicineId, payload);
+        toast.success("Medicine updated in pharmacy master.");
+      } else {
+        await addPharmacyMedicine(payload);
+        toast.success("Medicine added to pharmacy master.");
+      }
+      setShowMedicineForm(false);
+      resetMedicineForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save medicine.");
+    }
   };
 
-  const removeMedicine = (medicineId: string, medicineName: string) => {
+  const editMedicine = (medicine: PharmacyMedicine) => {
+    setEditingMedicineId(medicine.id);
+    setMedicineForm(mapMedicineToForm(medicine));
+    setShowMedicineForm(true);
+  };
+
+  const removeMedicine = async (medicineId: string, medicineName: string) => {
     if (!window.confirm(`Delete ${medicineName} from pharmacy master? Existing bills will stay in records.`)) {
       return;
     }
 
     try {
-      deletePharmacyMedicine(medicineId);
-      setData(readClinicAdminData());
+      await deletePharmacyMedicine(medicineId);
+      if (editingMedicineId === medicineId) {
+        setShowMedicineForm(false);
+        resetMedicineForm();
+      }
       toast.success(`${medicineName} deleted from pharmacy master.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete medicine.");
     }
   };
 
-  const createSale = () => {
+  const createSale = async () => {
     if (!saleForm.patientName.trim() || !saleForm.contactNo.trim()) {
       toast.error("Enter patient details first.");
       return;
@@ -171,7 +214,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
       return;
     }
     try {
-      const invoice = createPharmacySaleInvoice({
+      const invoice = await createPharmacySaleInvoice({
         patientId: createPatientId(saleForm.contactNo),
         patientName: saleForm.patientName.trim(),
         contactNo: saleForm.contactNo.trim(),
@@ -180,7 +223,6 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
         type: saleForm.type,
         items: salePreviewItems.map((item) => ({ medicineId: item.medicineId, name: item.name, qty: item.qty, price: item.price })),
       });
-      setData(readClinicAdminData());
       setSelectedSaleId(invoice.id);
       setShowSaleForm(false);
       resetSaleForm();
@@ -190,7 +232,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
     }
   };
 
-  const createPurchase = () => {
+  const createPurchase = async () => {
     if (!purchaseForm.supplierName.trim() || !purchaseForm.contactNo.trim()) {
       toast.error("Enter supplier details first.");
       return;
@@ -205,7 +247,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
       return;
     }
     try {
-      const invoice = addPharmacyPurchaseInvoice({
+      const invoice = await addPharmacyPurchaseInvoice({
         supplierId: purchaseForm.supplierId.trim() || `SUP-${purchaseForm.contactNo.slice(-4).padStart(4, "0")}`,
         supplierName: purchaseForm.supplierName.trim(),
         contactNo: purchaseForm.contactNo.trim(),
@@ -213,7 +255,6 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
         paymentStatus: purchaseForm.paymentStatus,
         items: purchasePreviewItems.map((item) => ({ medicineId: item.medicineId, name: item.name, qty: item.qty, price: item.price })),
       });
-      setData(readClinicAdminData());
       setSelectedPurchaseId(invoice.id);
       setShowPurchaseForm(false);
       resetPurchaseForm();
@@ -309,10 +350,10 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
 
       {view === "masters" ? (
         <Surface>
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between"><h3 className="font-display text-2xl text-foreground">Medicine Master</h3><div className="flex flex-col gap-3 sm:flex-row"><SearchField value={search} onChange={setSearch} placeholder="Search medicine" /><button onClick={() => setShowMedicineForm((current) => !current)} className="inline-flex items-center gap-2 rounded-full bg-[#5a49d6] px-4 py-2.5 text-sm font-medium text-white"><Plus className="h-4 w-4" />Add New Medicine</button></div></div>
-          {showMedicineForm ? <div className="mt-5 grid gap-4 rounded-[24px] border border-[#eadfc8] bg-white/80 p-5 md:grid-cols-2 xl:grid-cols-4">{Object.entries(medicineForm).map(([key, value]) => <label key={key} className="text-sm font-medium text-foreground capitalize">{key}<input type={key === "expiryDate" ? "date" : key === "stock" || key === "unitPrice" ? "number" : "text"} value={value} onChange={(event) => setMedicineForm((current) => ({ ...current, [key]: event.target.value }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" /></label>)}<div className="xl:col-span-4 flex gap-3"><button onClick={saveMedicine} className="rounded-full bg-[#5a49d6] px-5 py-2.5 text-sm font-medium text-white">Save Medicine</button><button onClick={() => { setShowMedicineForm(false); resetMedicineForm(); }} className="rounded-full border border-[#d8ccff] bg-white px-5 py-2.5 text-sm font-medium text-[#5a49d6]">Cancel</button></div></div> : null}
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between"><h3 className="font-display text-2xl text-foreground">Medicine Master</h3><div className="flex flex-col gap-3 sm:flex-row"><SearchField value={search} onChange={setSearch} placeholder="Search medicine" /><button onClick={() => { if (showMedicineForm && !editingMedicineId) { setShowMedicineForm(false); resetMedicineForm(); return; } resetMedicineForm(); setShowMedicineForm(true); }} className="inline-flex items-center gap-2 rounded-full bg-[#5a49d6] px-4 py-2.5 text-sm font-medium text-white"><Plus className="h-4 w-4" />Add New Medicine</button></div></div>
+          {showMedicineForm ? <div className="mt-5 rounded-[24px] border border-[#eadfc8] bg-white/80 p-5"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{editingMedicineId ? "Edit medicine" : "Add medicine"}</p><p className="mt-1 text-sm text-muted-foreground">{editingMedicineId ? "Update medicine details and save changes." : "Create a new medicine entry for pharmacy master."}</p></div>{editingMedicineId ? <button type="button" onClick={() => resetMedicineForm()} className="rounded-full border border-[#d8ccff] bg-white px-4 py-2 text-xs font-medium text-[#5a49d6]">Switch to Add New</button> : null}</div><div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">{Object.entries(medicineForm).map(([key, value]) => <label key={key} className="text-sm font-medium text-foreground capitalize">{key}<input type={key === "expiryDate" ? "date" : key === "stock" || key === "unitPrice" ? "number" : "text"} value={value} onChange={(event) => setMedicineForm((current) => ({ ...current, [key]: event.target.value }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" /></label>)}</div><div className="mt-5 flex gap-3"><button onClick={saveMedicine} className="rounded-full bg-[#5a49d6] px-5 py-2.5 text-sm font-medium text-white">{editingMedicineId ? "Update Medicine" : "Save Medicine"}</button><button onClick={() => { setShowMedicineForm(false); resetMedicineForm(); }} className="rounded-full border border-[#d8ccff] bg-white px-5 py-2.5 text-sm font-medium text-[#5a49d6]">Cancel</button></div></div> : null}
           <div className="mt-5 overflow-hidden rounded-[24px] border border-[#eadfc8] bg-white/70">
-            <div className="grid grid-cols-[1.1fr,0.9fr,0.8fr,0.8fr,0.8fr,0.7fr] gap-4 border-b border-[#eadfc8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="grid grid-cols-[1.1fr,0.9fr,0.8fr,0.8fr,0.8fr,1fr] gap-4 border-b border-[#eadfc8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               <span>Medicine</span>
               <span>Generic</span>
               <span>Group</span>
@@ -321,13 +362,21 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
               <span>Action</span>
             </div>
             {filteredMedicines.length > 0 ? filteredMedicines.map((item) => (
-              <div key={item.id} className="grid grid-cols-[1.1fr,0.9fr,0.8fr,0.8fr,0.8fr,0.7fr] gap-4 border-b border-[#f3ead8] px-4 py-4 text-sm last:border-b-0">
+              <div key={item.id} className="grid grid-cols-[1.1fr,0.9fr,0.8fr,0.8fr,0.8fr,1fr] gap-4 border-b border-[#f3ead8] px-4 py-4 text-sm last:border-b-0">
                 <span className="font-medium text-foreground">{item.name}</span>
                 <span>{item.generic}</span>
                 <span>{item.group}</span>
                 <span>{item.manufacturer}</span>
                 <span>{item.batch}</span>
-                <div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => editMedicine(item)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6] transition hover:bg-[#f5f1ff]"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </button>
                   <button
                     type="button"
                     onClick={() => removeMedicine(item.id, item.name)}
