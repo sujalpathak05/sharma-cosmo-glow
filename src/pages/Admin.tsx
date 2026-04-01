@@ -573,7 +573,7 @@ const Admin = () => {
                       <p className="mt-3 max-w-3xl text-sm text-[#65441b] sm:text-base">Manage doctor workflow, clinic bookings, OPD billing, pharmacy invoices, patient flow and follow-ups from a single dashboard.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <button onClick={() => void fetchAppointments()} disabled={loading} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-foreground shadow-sm disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh</button>
+                      <button onClick={async () => { await fetchAppointments(); toast.success("Dashboard refreshed successfully"); }} disabled={loading} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-foreground shadow-sm disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh</button>
                       <button onClick={() => void signOut()} className="inline-flex items-center gap-2 rounded-full bg-[#5a3b1c] px-4 py-2.5 text-sm font-medium text-white shadow-sm"><LogOut className="h-4 w-4" />Logout</button>
                     </div>
                   </div>
