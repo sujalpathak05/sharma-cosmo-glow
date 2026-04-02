@@ -7,55 +7,89 @@ import AppointmentSection from "@/components/AppointmentSection";
 import GallerySection from "@/components/GallerySection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import ContactSection from "@/components/ContactSection";
+import SeoContentSection from "@/components/SeoContentSection";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
 import { Helmet } from "react-helmet-async";
 import { clinicContact } from "@/lib/contactDetails";
+import { homeFaqs } from "@/data/homeSeo";
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "MedicalClinic",
-  "name": "Sharma Cosmo Clinic",
-  "description": "Best skin clinic & cosmetology center in Noida offering hair treatment, acne care, pigmentation solutions, laser procedures, anti-aging services by Dr. Visi Kant Sharma.",
-  "url": "https://sharmacosmoclinic.com",
-  "telephone": clinicContact.phoneDisplay,
-  "email": clinicContact.email,
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "T-22, P Block, Sector 11",
-    "addressLocality": "Noida",
-    "addressRegion": "Uttar Pradesh",
-    "postalCode": "201301",
-    "addressCountry": "IN"
-  },
-  "medicalSpecialty": "Dermatology",
-  "doctor": {
-    "@type": "Physician",
-    "name": "Dr. Visi Kant Sharma",
-    "medicalSpecialty": "Dermatology"
-  }
+  "@graph": [
+    {
+      "@type": ["MedicalClinic", "LocalBusiness"],
+      "@id": "https://sharmacosmoclinic.com/#clinic",
+      "name": "Sharma Cosmo Clinic",
+      "description": "Skin, hair, laser, PRP, chemical peel, and anti-aging treatments in Noida for patients across Delhi NCR.",
+      "url": "https://sharmacosmoclinic.com",
+      "telephone": clinicContact.phoneDisplay,
+      "email": clinicContact.email,
+      "logo": "https://sharmacosmoclinic.com/favicon.svg",
+      "priceRange": "$$",
+      "medicalSpecialty": "Aesthetic Medicine",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "T-22, P Block, Sector 11",
+        "addressLocality": "Noida",
+        "addressRegion": "Uttar Pradesh",
+        "postalCode": "201301",
+        "addressCountry": "IN"
+      },
+      "areaServed": [
+        { "@type": "City", "name": "Noida" },
+        { "@type": "City", "name": "Delhi" },
+        { "@type": "City", "name": "New Delhi" },
+        { "@type": "City", "name": "Ghaziabad" }
+      ],
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "opens": "11:00",
+          "closes": "20:00"
+        }
+      ],
+      "employee": {
+        "@type": "Physician",
+        "name": "Dr. Vishikant Sharma",
+        "description": "MBBS, CCEBDM, PGDCC, Fellowship in Aesthetic Medicine"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": homeFaqs.map((item) => ({
+        "@type": "Question",
+        "name": item.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": item.answer
+        }
+      }))
+    }
+  ]
 };
 
 const Index = () => {
   return (
     <>
       <Helmet>
-        <title>Sharma Cosmo Clinic Noida | Best Skin & Hair Treatment by Dr. Visi Kant Sharma</title>
+        <title>Sharma Cosmo Clinic Noida | Skin Clinic Near Delhi for Acne, PRP Hair, Laser and Anti-Aging Care</title>
         <meta
           name="description"
-          content="Sharma Cosmo Clinic Noida - Best skin doctor & cosmetology center. Hair fall treatment, acne care, pigmentation, laser procedures, anti-aging by Dr. Visi Kant Sharma. Book appointment now!"
+          content="Sharma Cosmo Clinic Noida offers acne treatment, PRP hair treatment, chemical peel treatment, laser hair removal, botox consultations, and anti-aging care for patients across Delhi NCR."
         />
         <meta
           name="keywords"
-          content="Sharma Cosmo Clinic, skin clinic Noida, hair treatment Noida, acne treatment Noida, pigmentation treatment, PRP hair therapy, laser treatment Noida, anti-aging Noida, dermatologist Noida, Dr. Visi Kant Sharma, best skin doctor Noida, cosmetology Noida"
+          content="skin clinic in Delhi, cosmetic clinic near me, laser hair removal Delhi, acne treatment Delhi, best dermatologist Delhi, PRP hair treatment, chemical peel treatment, botox clinic, anti-aging treatment, skin clinic Noida, Delhi NCR skin clinic"
         />
         <link rel="canonical" href="https://sharmacosmoclinic.com" />
-        <meta property="og:title" content="Sharma Cosmo Clinic Noida | Best Skin & Hair Treatment" />
-        <meta property="og:description" content="Best skin clinic in Noida. Hair fall, acne, pigmentation, laser & anti-aging treatment by Dr. Visi Kant Sharma." />
+        <meta property="og:title" content="Sharma Cosmo Clinic Noida | Skin Clinic Near Delhi for Acne, PRP Hair, Laser and Anti-Aging Care" />
+        <meta property="og:description" content="Doctor-led skin, hair, laser, PRP, chemical peel, botox, and anti-aging care in Noida for patients across Delhi NCR." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://sharmacosmoclinic.com" />
-        <meta name="twitter:title" content="Sharma Cosmo Clinic Noida | Best Skin & Hair Treatment" />
-        <meta name="twitter:description" content="Best skin clinic in Noida. Hair fall, acne, pigmentation, laser & anti-aging treatment by Dr. Visi Kant Sharma." />
+        <meta name="twitter:title" content="Sharma Cosmo Clinic Noida | Skin Clinic Near Delhi for Acne, PRP Hair, Laser and Anti-Aging Care" />
+        <meta name="twitter:description" content="Doctor-led skin, hair, laser, PRP, chemical peel, botox, and anti-aging care in Noida for patients across Delhi NCR." />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
       <Navbar />
@@ -63,6 +97,7 @@ const Index = () => {
         <HeroSection />
         <AboutSection />
         <ServicesSection />
+        <SeoContentSection />
         <AppointmentSection />
         <GallerySection />
         <TestimonialsSection />

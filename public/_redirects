@@ -1,1 +1,4 @@
+http://sharmacosmoclinic.com/* https://sharmacosmoclinic.com/:splat 301!
+http://www.sharmacosmoclinic.com/* https://sharmacosmoclinic.com/:splat 301!
+https://www.sharmacosmoclinic.com/* https://sharmacosmoclinic.com/:splat 301!
 /* /index.html 200

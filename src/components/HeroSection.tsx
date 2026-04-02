@@ -3,21 +3,21 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import heroImage from "@/assets/hero-clinic.jpg";
 
 const heroHighlights = [
-  "Personalized skincare plans",
-  "Doctor-led hair restoration support",
-  "Advanced laser and anti-aging care",
+  "Personalized acne and pigmentation care",
+  "PRP hair treatment and scalp support",
+  "Laser hair removal and anti-aging planning",
 ];
 
-const highlightedPhrases = ["confident skin", "stronger hair"];
+const highlightedPhrases = ["acne treatment", "PRP hair treatment"];
 
 const heroCards = [
   {
     title: "Tailored Treatment Plans",
-    text: "Every consultation is shaped around your skin, hair, lifestyle, and long-term goals.",
+    text: "Every consultation is built around your skin, hair, lifestyle, and the concern you want to solve first.",
   },
   {
     title: "Clinic-Led Follow Through",
-    text: "From first visit to follow-up guidance, the experience stays clear, calm, and premium.",
+    text: "From first visit to follow-up guidance, the care pathway stays clear, calm, and easy to revisit.",
   },
 ];
 
@@ -35,7 +35,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section id="home" className="relative min-h-screen flex items-center overflow-hidden bg-charcoal">
+    <section id="home" className="relative flex min-h-screen items-center overflow-hidden bg-charcoal">
       <div className="absolute inset-0">
         <img
           src={heroImage}
@@ -43,6 +43,8 @@ const HeroSection = () => {
           className={`w-full h-full object-cover transition-transform ease-out ${loaded ? "scale-100" : "scale-110"}`}
           style={{ transitionDuration: "1500ms" }}
           loading="eager"
+          decoding="async"
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/88 via-foreground/62 to-foreground/28" />
         <div className="absolute inset-0 motion-grid mix-blend-soft-light" />
@@ -74,7 +76,7 @@ const HeroSection = () => {
                 }`}
               >
                 <Sparkles size={15} className="text-gold" />
-                Personalized dermatology care in Noida
+                Skin clinic in Noida serving Delhi NCR
               </div>
 
               <p
@@ -83,10 +85,10 @@ const HeroSection = () => {
                 }`}
                 style={{ transitionDelay: "0.15s" }}
               >
-                Best Skin & Hair Clinic in Noida
+                Skin clinic near Delhi in Noida
               </p>
 
-              <div className="space-y-3" style={{ textShadow: "0 10px 35px rgba(0,0,0,0.5)" }}>
+              <h1 className="space-y-3" style={{ textShadow: "0 10px 35px rgba(0,0,0,0.5)" }}>
                 <div className="overflow-hidden">
                   <span
                     className={`block heading-display text-4xl sm:text-5xl lg:text-6xl text-primary-foreground transition-all duration-1000 ease-out ${
@@ -94,7 +96,7 @@ const HeroSection = () => {
                     }`}
                     style={{ transitionDelay: "0.28s", lineHeight: "1.08" }}
                   >
-                    Sharma Cosmo Clinic for
+                    Skin, hair, and aesthetic care
                   </span>
                 </div>
 
@@ -127,10 +129,10 @@ const HeroSection = () => {
                     }`}
                     style={{ transitionDelay: "0.56s", lineHeight: "1.08" }}
                   >
-                    and modern aesthetic care.
+                    for Noida and Delhi NCR patients.
                   </span>
                 </div>
-              </div>
+              </h1>
 
               <div className="overflow-hidden mt-6">
                 <p
@@ -139,8 +141,9 @@ const HeroSection = () => {
                   }`}
                   style={{ transitionDelay: "0.72s" }}
                 >
-                  Advanced dermatology and cosmetic treatments by Dr. Visi Kant Sharma, designed to feel
-                  medical, personal, and beautifully refined from day one.
+                  Doctor-led care by Dr. Vishikant Sharma for acne treatment, chemical peel treatment,
+                  PRP hair treatment, laser hair removal planning, botox consultations, and anti-aging
+                  treatment that stays personal from day one.
                 </p>
               </div>
 

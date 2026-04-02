@@ -44,12 +44,18 @@ const estimateOpdAmount = (service: string, consultationMode: string | null | un
   if (value.includes("filler")) return 18000;
   if (value.includes("botox")) return 12000;
   if (value.includes("laser")) return 4500;
+  if (value.includes("prp")) return 3000;
   if (value.includes("hair")) return 3500;
   if (value.includes("facial") || value.includes("hydra")) return 2500;
   if (value.includes("peel")) return 2200;
   if (value.includes("consult")) return 800;
   return 1500;
 };
+
+const manualServiceOptions = [
+  { label: "Consultation", amount: getConsultationFee("offline") },
+  { label: "PRP Treatment", amount: 3000 },
+] as const;
 
 type BillingMode = "appointment" | "manual";
 
@@ -377,10 +383,34 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
 
             <label className="block text-sm font-medium text-foreground">
               Visit / Service
+              {billingMode === "manual" ? (
+                <select
+                  value={manualServiceOptions.some((option) => option.label === draft.service) ? draft.service : ""}
+                  onChange={(event) => {
+                    const selected = manualServiceOptions.find((option) => option.label === event.target.value);
+                    if (!selected) return;
+
+                    setDraft((current) => ({
+                      ...current,
+                      service: selected.label,
+                      amount: selected.amount,
+                    }));
+                  }}
+                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none"
+                >
+                  <option value="">Select quick billing option</option>
+                  {manualServiceOptions.map((option) => (
+                    <option key={option.label} value={option.label}>
+                      {option.label} - {formatMoney(option.amount)}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
               <input
                 value={draft.service}
                 onChange={(event) => setDraft((current) => ({ ...current, service: event.target.value }))}
                 className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none"
+                placeholder={billingMode === "manual" ? "Choose a preset or type a custom service" : undefined}
               />
             </label>
 
@@ -394,7 +424,9 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
                     setDraft((current) => ({
                       ...current,
                       consultationMode,
-                      amount: getConsultationFee(consultationMode),
+                      amount: current.service.trim().toLowerCase().includes("consult")
+                        ? getConsultationFee(consultationMode)
+                        : current.amount,
                     }));
                   }}
                   className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none"

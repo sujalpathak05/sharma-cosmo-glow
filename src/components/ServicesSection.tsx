@@ -2,12 +2,12 @@ import { Sparkles, Droplets, Wind, Zap, Clock, Scissors, ArrowRight } from "luci
 import { useState, useEffect, useRef } from "react";
 
 const services = [
-  { icon: Sparkles, title: "Skin Treatment", desc: "Comprehensive skin care solutions including facials, chemical peels, and advanced dermatological treatments for radiant, healthy skin.", detail: "Our skin treatments are customized to address your specific concerns using the latest dermatological advances." },
-  { icon: Droplets, title: "Acne & Pigmentation", desc: "Targeted treatments for acne, dark spots, melasma, and uneven skin tone using medical-grade formulations and procedures.", detail: "We use a combination of topical treatments, light therapy, and chemical peels for lasting results." },
-  { icon: Wind, title: "Hair Fall Treatment", desc: "Advanced solutions for hair thinning and loss including PRP therapy, mesotherapy, and personalized regrowth programs.", detail: "Our hair restoration programs combine medical treatments with nutritional guidance for optimal results." },
-  { icon: Zap, title: "Laser Treatment", desc: "State-of-the-art laser procedures for hair removal, skin resurfacing, scar reduction, and pigmentation correction.", detail: "We use FDA-approved lasers with customizable settings for safe, effective treatment across all skin types." },
-  { icon: Clock, title: "Anti-Aging Treatment", desc: "Turn back the clock with botox, dermal fillers, skin tightening, and collagen-boosting therapies for youthful skin.", detail: "Our anti-aging protocols focus on natural-looking results that enhance your features without overdoing it." },
-  { icon: Scissors, title: "Cosmetic Procedures", desc: "Expert cosmetic enhancements including lip augmentation, rhinoplasty consultation, and body contouring treatments.", detail: "Each procedure is carefully planned with a detailed consultation to ensure your goals are met safely." },
+  { icon: Sparkles, title: "Acne and Skin Treatment", desc: "Doctor-led care for active acne, acne marks, pigmentation, dullness, and uneven skin tone with routines that respect your skin barrier.", detail: "Plans may include consultation, home-care correction, clinic procedures, and follow-up that matches your skin type and recovery comfort." },
+  { icon: Droplets, title: "Chemical Peel Treatment", desc: "Targeted peel planning for tan, acne marks, oil control, texture, and superficial pigmentation with gradual, safe improvement.", detail: "Each peel is selected according to sensitivity, pigment risk, and the exact concern being treated instead of using a one-size-fits-all protocol." },
+  { icon: Wind, title: "PRP Hair Treatment", desc: "Scalp-focused planning for hair fall, early thinning, and weak follicles with PRP, supportive medical care, and long-term maintenance guidance.", detail: "Hair treatment starts with scalp and trigger assessment so procedures like PRP are recommended only when they are likely to help." },
+  { icon: Zap, title: "Laser Hair Removal", desc: "Laser-based hair reduction and skin-focused laser planning for patients who want smoother results and less dependence on frequent waxing.", detail: "Suitability is assessed according to skin tone, hair thickness, target area, and the number of sessions needed for consistent reduction." },
+  { icon: Clock, title: "Botox and Anti-Aging Treatment", desc: "Natural-looking anti-aging planning for early lines, tired skin, texture changes, and preventive aesthetic care.", detail: "Botox, peels, hydration support, and skin-quality treatments are recommended conservatively to keep results refined and facial expressions balanced." },
+  { icon: Scissors, title: "Aesthetic Consultations", desc: "Personalized consultations for glow goals, event preparation, pigmentation correction, and doctor-guided cosmetic treatment planning.", detail: "Every recommendation is explained in clear terms so you understand the expected benefit, downtime, and maintenance before you proceed." },
 ];
 
 const ServicesSection = () => {
@@ -32,7 +32,7 @@ const ServicesSection = () => {
   }, []);
 
   return (
-    <section id="services" ref={sectionRef} className="section-glow relative py-24 lg:py-32 section-padding overflow-hidden">
+    <section id="services" ref={sectionRef} className="deferred-section section-glow relative py-24 lg:py-32 section-padding overflow-hidden">
       <div className="absolute inset-0 motion-grid opacity-40 pointer-events-none" />
       <div className="absolute pointer-events-none -right-16 top-24 h-64 w-64 motion-orb-gold opacity-70" />
 
@@ -43,8 +43,9 @@ const ServicesSection = () => {
             Treatments We Offer
           </h2>
           <p className="text-body max-w-2xl mx-auto">
-            From advanced skin rejuvenation to cosmetic enhancements, we provide a comprehensive
-            range of treatments designed to bring out your best.
+            From acne treatment and chemical peel treatment to PRP hair treatment, laser hair
+            removal, and anti-aging care, every service is planned around clinical suitability and
+            realistic outcomes.
           </p>
         </div>
 

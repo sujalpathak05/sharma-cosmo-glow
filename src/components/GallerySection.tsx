@@ -32,7 +32,7 @@ const GallerySection = () => {
   }, []);
 
   return (
-    <section id="gallery" ref={sectionRef} className="section-glow relative py-24 lg:py-32 bg-cream section-padding overflow-hidden">
+    <section id="gallery" ref={sectionRef} className="deferred-section section-glow relative py-24 lg:py-32 bg-cream section-padding overflow-hidden">
       <div className="absolute inset-0 motion-grid opacity-35 pointer-events-none" />
       <div className="absolute pointer-events-none -left-12 bottom-10 h-64 w-64 motion-orb opacity-70" />
 
@@ -64,6 +64,7 @@ const GallerySection = () => {
                   i === 0 ? "h-full min-h-[300px]" : "aspect-[4/3]"
                 }`}
                 loading="lazy"
+                decoding="async"
               />
 
               <div className="absolute inset-0 bg-gradient-to-t from-foreground/72 via-foreground/12 to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-100" />

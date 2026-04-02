@@ -99,7 +99,7 @@ const TestimonialsSection = () => {
   };
 
   return (
-    <section id="testimonials" ref={sectionRef} className="section-glow relative py-24 lg:py-32 section-padding overflow-hidden">
+    <section id="testimonials" ref={sectionRef} className="deferred-section section-glow relative py-24 lg:py-32 section-padding overflow-hidden">
       <div className="absolute inset-0 motion-grid opacity-35 pointer-events-none" />
       <div className="absolute pointer-events-none right-0 top-24 h-60 w-60 motion-orb-gold opacity-60" />
 

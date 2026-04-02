@@ -9,12 +9,12 @@ import { buildStoredAppointmentMessage, removeLocalAppointment, saveLocalAppoint
 import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, type ConsultationMode } from "@/lib/consultationMode";
 
 const services = [
-  "Skin Treatment",
-  "Acne & Pigmentation",
-  "Hair Fall Treatment",
-  "Laser Treatment",
-  "Anti-Aging Treatment",
-  "Cosmetic Procedures",
+  "Acne and Skin Treatment",
+  "Chemical Peel Treatment",
+  "PRP Hair Treatment",
+  "Laser Hair Removal",
+  "Botox and Anti-Aging Treatment",
+  "Aesthetic Consultations",
 ];
 
 const locations = [{ value: "Noida", label: "Noida" }];
@@ -203,7 +203,7 @@ const AppointmentSection = () => {
 
   if (submitted) {
     return (
-      <section id="appointment" ref={sectionRef} className="section-glow relative reveal py-24 lg:py-32 bg-rose-soft section-padding overflow-hidden">
+      <section id="appointment" ref={sectionRef} className="deferred-section section-glow relative reveal py-24 lg:py-32 bg-rose-soft section-padding overflow-hidden">
         <div className="absolute inset-0 motion-grid opacity-30 pointer-events-none" />
         <div className="section-container text-center max-w-xl mx-auto">
           <div className="glass-panel rounded-[2rem] p-10 sm:p-12 shadow-xl">
@@ -216,7 +216,7 @@ const AppointmentSection = () => {
               <strong>{formData.service}</strong> at <strong>{formData.location}</strong>.
             </p>
             <p className="font-body text-sm text-muted-foreground mb-3">
-              Consultation mode: <strong>{getConsultationModeLabel(formData.consultationMode)}</strong> • Fee{" "}
+              Consultation mode: <strong>{getConsultationModeLabel(formData.consultationMode)}</strong> - Fee{" "}
               <strong>Rs. {getConsultationFee(formData.consultationMode)}</strong>
             </p>
             {savedMode === "local" ? (
@@ -244,7 +244,7 @@ const AppointmentSection = () => {
   }
 
   return (
-    <section id="appointment" ref={sectionRef} className="section-glow relative reveal py-24 lg:py-32 bg-rose-soft section-padding overflow-hidden">
+      <section id="appointment" ref={sectionRef} className="deferred-section section-glow relative reveal py-24 lg:py-32 bg-rose-soft section-padding overflow-hidden">
       <div className="absolute inset-0 motion-grid opacity-30 pointer-events-none" />
       <div className="absolute pointer-events-none left-0 top-20 h-64 w-64 motion-orb opacity-60" />
 
@@ -256,8 +256,8 @@ const AppointmentSection = () => {
               Schedule Your Consultation
             </h2>
             <p className="text-body mb-8 max-w-md">
-              Take the first step toward healthier, more radiant skin. Book your appointment
-              today and let our experts craft the perfect treatment plan for you.
+              Book an appointment for acne treatment, PRP hair treatment, laser hair removal,
+              chemical peel treatment, or anti-aging care and get a plan matched to your concern.
             </p>
 
             <div className="space-y-4">

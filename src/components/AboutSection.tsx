@@ -30,7 +30,7 @@ const AboutSection = () => {
   }, []);
 
   return (
-    <section id="about" ref={sectionRef} className="section-glow py-24 lg:py-32 bg-cream section-padding overflow-hidden">
+    <section id="about" ref={sectionRef} className="deferred-section section-glow py-24 lg:py-32 bg-cream section-padding overflow-hidden">
       <div className="absolute inset-0 motion-grid opacity-35 pointer-events-none" />
       <div className="absolute pointer-events-none -left-16 top-32 h-56 w-56 motion-orb opacity-70" />
 
@@ -40,9 +40,10 @@ const AboutSection = () => {
             <div className="spotlight-card rounded-[2rem] overflow-hidden shadow-2xl shadow-black/10 group bg-card/60">
               <img
                 src={doctorImage}
-                alt="Dr. Visi Kant Sharma - Lead Dermatologist at Sharma Cosmo Clinic Noida"
+                alt="Dr. Vishikant Sharma at Sharma Cosmo Clinic in Noida"
                 className="w-full aspect-[4/5] object-cover transition-transform duration-700 group-hover:scale-105 group-hover:rotate-[1deg]"
                 loading="lazy"
+                decoding="async"
               />
             </div>
             <div
@@ -59,12 +60,13 @@ const AboutSection = () => {
           <div className={`transition-all duration-1000 ease-out ${visible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"}`} style={{ transitionDelay: "0.2s" }}>
             <p className="font-body text-sm uppercase tracking-[0.15em] text-primary mb-4">Our Doctor</p>
             <h2 className="heading-display text-3xl sm:text-4xl lg:text-[2.75rem] mb-2">
-              Dr. Visi Kant Sharma
+              Dr. Vishikant Sharma
             </h2>
             <p className="text-body text-base mb-6 max-w-lg">
               MBBS, CCEBDM (Diabetology), PGDCC, and Fellowship in Aesthetic Medicine.
-              Dr. Visi Kant Sharma brings together medical expertise and aesthetic care to offer
-              thoughtful, personalized consultations at Sharma Cosmo Clinic.
+              Dr. Vishikant Sharma brings together medical practice, clinical cosmetology, and
+              aesthetic medicine to offer thoughtful, personalized consultations at Sharma Cosmo
+              Clinic.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-10">

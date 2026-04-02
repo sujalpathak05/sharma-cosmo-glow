@@ -3,9 +3,21 @@ import { MapPin, Phone, Mail } from "lucide-react";
 import { clinicContact } from "@/lib/contactDetails";
 
 const contactInfo = [
-  { icon: Phone, title: "Call Us", lines: [clinicContact.phoneDisplay] },
-  { icon: Mail, title: "Email Support", lines: [clinicContact.email] },
-  { icon: MapPin, title: "Visit Us", lines: clinicContact.addressLines },
+  {
+    icon: Phone,
+    title: "Call Us",
+    lines: [{ label: clinicContact.phoneDisplay, href: `tel:${clinicContact.phoneHref}` }],
+  },
+  {
+    icon: Mail,
+    title: "Email Support",
+    lines: [{ label: clinicContact.email, href: `mailto:${clinicContact.email}` }],
+  },
+  {
+    icon: MapPin,
+    title: "Visit Us",
+    lines: clinicContact.addressLines.map((line) => ({ label: line })),
+  },
 ];
 
 const ContactSection = () => {
@@ -29,7 +41,7 @@ const ContactSection = () => {
   }, []);
 
   return (
-    <section id="contact" ref={sectionRef} className="section-glow relative py-24 lg:py-32 bg-cream section-padding overflow-hidden">
+    <section id="contact" ref={sectionRef} className="deferred-section section-glow relative py-24 lg:py-32 bg-cream section-padding overflow-hidden">
       <div className="absolute inset-0 motion-grid opacity-35 pointer-events-none" />
       <div className="absolute pointer-events-none -right-16 bottom-0 h-72 w-72 motion-orb opacity-60" />
 
@@ -40,7 +52,8 @@ const ContactSection = () => {
             Contact &amp; Support
           </h2>
           <p className="text-body max-w-2xl mx-auto">
-            Reach out for appointments, treatment guidance, or directions to our Noida clinic.
+            Reach out for appointments, treatment guidance, or directions to our Noida clinic if
+            you are visiting from Noida or nearby Delhi NCR areas.
           </p>
         </div>
 
@@ -60,9 +73,19 @@ const ContactSection = () => {
                 <div>
                   <p className="font-body font-semibold text-foreground text-sm mb-1">{item.title}</p>
                   {item.lines.map((line) => (
-                    <p key={line} className="font-body text-sm text-muted-foreground">
-                      {line}
-                    </p>
+                    line.href ? (
+                      <a
+                        key={line.label}
+                        href={line.href}
+                        className="block font-body text-sm text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        {line.label}
+                      </a>
+                    ) : (
+                      <p key={line.label} className="font-body text-sm text-muted-foreground">
+                        {line.label}
+                      </p>
+                    )
                   ))}
                 </div>
               </div>
