@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, Edit3, Plus, ReceiptText } from "lucide-react";
+import { CalendarClock, Download, Edit3, Plus, ReceiptText } from "lucide-react";
 import { toast } from "sonner";
 
 import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
