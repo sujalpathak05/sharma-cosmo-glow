@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, Edit3, Plus, ReceiptText } from "lucide-react";
+import { CalendarClock, Download, Edit3, Plus, ReceiptText } from "lucide-react";
 import { toast } from "sonner";
 
 import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
@@ -531,19 +531,19 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
             </div>
 
             <div className="mt-5 overflow-hidden rounded-[24px] border border-[#eadfc8] bg-white/70">
-              <div className="grid grid-cols-[0.95fr,1fr,0.9fr,0.8fr,0.8fr,0.7fr] gap-4 border-b border-[#eadfc8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <div className="grid grid-cols-[0.95fr,1fr,0.9fr,0.8fr,0.8fr,auto] gap-4 border-b border-[#eadfc8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 <span>Bill No</span>
                 <span>Patient</span>
                 <span>Date</span>
                 <span>Mode</span>
                 <span>Amount</span>
-                <span>Action</span>
+                <span>Actions</span>
               </div>
               {filteredHistory.length === 0 ? (
                 <div className="px-4 py-10 text-center text-sm text-muted-foreground">No OPD bill history found for this search.</div>
               ) : (
                 filteredHistory.map((bill) => (
-                  <div key={bill.id} className={cn("grid grid-cols-[0.95fr,1fr,0.9fr,0.8fr,0.8fr,0.7fr] gap-4 border-b border-[#f3ead8] px-4 py-4 text-sm last:border-b-0", activeBillId === bill.id && "bg-[#fff7e5]")}>
+                  <div key={bill.id} className={cn("grid grid-cols-[0.95fr,1fr,0.9fr,0.8fr,0.8fr,auto] gap-4 border-b border-[#f3ead8] px-4 py-4 text-sm last:border-b-0", activeBillId === bill.id && "bg-[#fff7e5]")}>
                     <div>
                       <p className="font-medium text-[#5a49d6]">{bill.billNo}</p>
                       <p className="mt-1 text-xs text-muted-foreground capitalize">{bill.status}</p>
@@ -555,13 +555,34 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
                     <span>{formatDateOnly(bill.date)}</span>
                     <span>{getConsultationModeLabel(bill.consultationMode)}</span>
                     <span>{formatMoney(bill.totalAmount)}</span>
-                    <button
-                      onClick={() => loadBillIntoDraft(bill)}
-                      className="inline-flex items-center gap-2 rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6]"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                      Edit
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => loadBillIntoDraft(bill)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6]"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          loadBillIntoDraft(bill);
+                          setTimeout(() => {
+                            const invoiceEl = document.querySelector(".print-bill-area") as HTMLElement | null;
+                            if (invoiceEl) {
+                              invoiceEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                              setTimeout(() => {
+                                const printBtn = invoiceEl.querySelector("button") as HTMLButtonElement | null;
+                                if (printBtn) printBtn.click();
+                              }, 600);
+                            }
+                          }, 300);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Download
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
