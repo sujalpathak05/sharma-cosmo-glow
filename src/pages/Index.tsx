@@ -97,17 +97,21 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroSection />
-        <AboutSection />
-        <ServicesSection />
-        <SeoContentSection />
-        <AppointmentSection />
-        <GallerySection />
-        <TestimonialsSection />
-        <BlogSection />
-        <ContactSection />
+        <Suspense fallback={<div className="min-h-[40vh]" />}>
+          <AboutSection />
+          <ServicesSection />
+          <SeoContentSection />
+          <AppointmentSection />
+          <GallerySection />
+          <TestimonialsSection />
+          <BlogSection />
+          <ContactSection />
+        </Suspense>
       </main>
-      <Footer />
-      <FloatingButtons />
+      <Suspense fallback={null}>
+        <Footer />
+        <FloatingButtons />
+      </Suspense>
     </>
   );
 };
