@@ -1,15 +1,17 @@
+import { lazy, Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-import AboutSection from "@/components/AboutSection";
-import ServicesSection from "@/components/ServicesSection";
-import BlogSection from "@/components/BlogSection";
-import AppointmentSection from "@/components/AppointmentSection";
-import GallerySection from "@/components/GallerySection";
-import TestimonialsSection from "@/components/TestimonialsSection";
-import ContactSection from "@/components/ContactSection";
-import SeoContentSection from "@/components/SeoContentSection";
-import Footer from "@/components/Footer";
-import FloatingButtons from "@/components/FloatingButtons";
+
+const AboutSection = lazy(() => import("@/components/AboutSection"));
+const ServicesSection = lazy(() => import("@/components/ServicesSection"));
+const BlogSection = lazy(() => import("@/components/BlogSection"));
+const AppointmentSection = lazy(() => import("@/components/AppointmentSection"));
+const GallerySection = lazy(() => import("@/components/GallerySection"));
+const TestimonialsSection = lazy(() => import("@/components/TestimonialsSection"));
+const ContactSection = lazy(() => import("@/components/ContactSection"));
+const SeoContentSection = lazy(() => import("@/components/SeoContentSection"));
+const Footer = lazy(() => import("@/components/Footer"));
+const FloatingButtons = lazy(() => import("@/components/FloatingButtons"));
 import { Helmet } from "react-helmet-async";
 import { clinicContact } from "@/lib/contactDetails";
 import { homeFaqs } from "@/data/homeSeo";
@@ -95,17 +97,21 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroSection />
-        <AboutSection />
-        <ServicesSection />
-        <SeoContentSection />
-        <AppointmentSection />
-        <GallerySection />
-        <TestimonialsSection />
-        <BlogSection />
-        <ContactSection />
+        <Suspense fallback={<div className="min-h-[40vh]" />}>
+          <AboutSection />
+          <ServicesSection />
+          <SeoContentSection />
+          <AppointmentSection />
+          <GallerySection />
+          <TestimonialsSection />
+          <BlogSection />
+          <ContactSection />
+        </Suspense>
       </main>
-      <Footer />
-      <FloatingButtons />
+      <Suspense fallback={null}>
+        <Footer />
+        <FloatingButtons />
+      </Suspense>
     </>
   );
 };
