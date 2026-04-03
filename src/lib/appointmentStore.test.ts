@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  buildStoredAppointmentMessage,
   isLocalAppointmentId,
   mergeAppointments,
+  normalizeCloudAppointments,
   readLocalAppointments,
   saveLocalAppointment,
   updateLocalAppointmentStatus,
@@ -17,6 +19,7 @@ describe("appointment local backup store", () => {
       name: "Test User",
       phone: "9999999999",
       email: "test@example.com",
+      gender: "Female",
       service: "Skin Treatment",
       location: "Noida",
       preferred_date: "2026-03-31",
@@ -28,6 +31,7 @@ describe("appointment local backup store", () => {
     expect(isLocalAppointmentId(record.id)).toBe(true);
     expect(readLocalAppointments()).toHaveLength(1);
     expect(readLocalAppointments()[0]?.name).toBe("Test User");
+    expect(readLocalAppointments()[0]?.gender).toBe("Female");
   });
 
   it("updates local appointment status", () => {
@@ -35,6 +39,7 @@ describe("appointment local backup store", () => {
       name: "Test User",
       phone: "9999999999",
       email: null,
+      gender: "Male",
       service: "Skin Treatment",
       location: "Noida",
       preferred_date: null,
@@ -47,6 +52,29 @@ describe("appointment local backup store", () => {
     expect(updated[0]?.status).toBe("confirmed");
   });
 
+  it("extracts gender and consultation mode from stored cloud message tokens", () => {
+    const normalized = normalizeCloudAppointments([
+      {
+        id: "cloud-1",
+        name: "Cloud User",
+        phone: "1111111111",
+        email: null,
+        service: "Laser Treatment",
+        location: "Noida",
+        preferred_date: null,
+        preferred_time: null,
+        message: buildStoredAppointmentMessage("Need call back", "online", "Others"),
+        consultation_mode: null,
+        status: "pending",
+        created_at: "2026-03-30T09:00:00.000Z",
+      },
+    ]);
+
+    expect(normalized[0]?.gender).toBe("Others");
+    expect(normalized[0]?.consultation_mode).toBe("online");
+    expect(normalized[0]?.message).toBe("Need call back");
+  });
+
   it("merges local records before cloud records and sorts by created_at", () => {
     const merged = mergeAppointments(
       [
@@ -55,6 +83,7 @@ describe("appointment local backup store", () => {
           name: "Cloud User",
           phone: "1111111111",
           email: null,
+          gender: "Female",
           service: "Laser Treatment",
           location: "Noida",
           preferred_date: null,
@@ -72,6 +101,7 @@ describe("appointment local backup store", () => {
           name: "Local User",
           phone: "2222222222",
           email: null,
+          gender: "Male",
           service: "Skin Treatment",
           location: "Noida",
           preferred_date: null,

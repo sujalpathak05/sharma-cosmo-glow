@@ -1,10 +1,12 @@
 import { normalizeConsultationMode, type ConsultationMode } from "@/lib/consultationMode";
+import { normalizePatientGender, patientGenderTokenValue, type PatientGender } from "@/lib/patientGender";
 
 export type AppointmentRecord = {
   id: string;
   name: string;
   phone: string;
   email: string | null;
+  gender: PatientGender | null;
   service: string;
   location: string;
   preferred_date: string | null;
@@ -20,7 +22,7 @@ export type AppointmentDraft = Omit<AppointmentRecord, "id" | "status" | "create
 
 const LOCAL_APPOINTMENTS_KEY = "sharma-cosmo-local-appointments";
 const LOCAL_APPOINTMENTS_EVENT = "appointments:local-updated";
-const CONSULTATION_MODE_TOKEN = /^\[\[consultation:(online|offline)\]\]\s*/i;
+const APPOINTMENT_META_TOKEN = /^\[\[(consultation|gender):([a-z]+)\]\]\s*/i;
 
 const canUseStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 
@@ -42,24 +44,42 @@ const unpackAppointmentMessage = (value: unknown) => {
   if (typeof value !== "string") {
     return {
       message: null,
+      gender: null as PatientGender | null,
       consultation_mode: null as ConsultationMode | null,
     };
   }
 
-  const trimmed = value.trim();
-  if (!trimmed) {
+  let message = value.trim();
+  if (!message) {
     return {
       message: null,
+      gender: null as PatientGender | null,
       consultation_mode: null as ConsultationMode | null,
     };
   }
 
-  const match = trimmed.match(CONSULTATION_MODE_TOKEN);
-  const consultationMode = normalizeConsultationMode(match?.[1] ?? null);
-  const message = consultationMode ? trimmed.replace(CONSULTATION_MODE_TOKEN, "").trim() : trimmed;
+  let consultationMode: ConsultationMode | null = null;
+  let gender: PatientGender | null = null;
+
+  while (message) {
+    const match = message.match(APPOINTMENT_META_TOKEN);
+    if (!match) break;
+
+    const [, tokenName, tokenValue] = match;
+    if (tokenName.toLowerCase() === "consultation") {
+      consultationMode = normalizeConsultationMode(tokenValue);
+    }
+
+    if (tokenName.toLowerCase() === "gender") {
+      gender = normalizePatientGender(tokenValue);
+    }
+
+    message = message.slice(match[0].length).trim();
+  }
 
   return {
     message: message || null,
+    gender,
     consultation_mode: consultationMode,
   };
 };
@@ -67,12 +87,19 @@ const unpackAppointmentMessage = (value: unknown) => {
 export const buildStoredAppointmentMessage = (
   message: string | null | undefined,
   consultationMode: ConsultationMode | null | undefined,
+  gender?: PatientGender | null,
 ) => {
   const normalizedMode = normalizeConsultationMode(consultationMode);
+  const normalizedGender = patientGenderTokenValue(gender);
   const trimmedMessage = message?.trim() || "";
 
-  if (!normalizedMode) return trimmedMessage || null;
-  return [`[[consultation:${normalizedMode}]]`, trimmedMessage].filter(Boolean).join(" ").trim();
+  const parts = [
+    normalizedMode ? `[[consultation:${normalizedMode}]]` : null,
+    normalizedGender ? `[[gender:${normalizedGender}]]` : null,
+    trimmedMessage || null,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" ") : null;
 };
 
 const sanitizeLocalAppointments = (value: unknown): AppointmentRecord[] => {
@@ -88,6 +115,7 @@ const sanitizeLocalAppointments = (value: unknown): AppointmentRecord[] => {
         name: typeof item.name === "string" ? item.name : "",
         phone: typeof item.phone === "string" ? item.phone : "",
         email: typeof item.email === "string" ? item.email : null,
+        gender: normalizePatientGender(item.gender) ?? unpacked.gender,
         service: typeof item.service === "string" ? item.service : "",
         location: typeof item.location === "string" ? item.location : "",
         preferred_date: typeof item.preferred_date === "string" ? item.preferred_date : null,
@@ -123,6 +151,7 @@ export const readLocalAppointments = () => {
 export const saveLocalAppointment = (draft: AppointmentDraft) => {
   const nextRecord: AppointmentRecord = {
     ...draft,
+    gender: normalizePatientGender(draft.gender),
     consultation_mode: normalizeConsultationMode(draft.consultation_mode),
     id: createLocalAppointmentId(),
     status: "pending",
@@ -151,16 +180,17 @@ export const updateLocalAppointmentStatus = (id: string, status: string) => {
   return updated;
 };
 
-export const normalizeCloudAppointments = (appointments: Array<Omit<AppointmentRecord, "source">>) =>
+export const normalizeCloudAppointments = (appointments: Array<Partial<Omit<AppointmentRecord, "source">>>) =>
   appointments.map((appointment) => {
     const unpacked = unpackAppointmentMessage(appointment.message);
 
     return {
       ...appointment,
+      gender: normalizePatientGender(appointment.gender) ?? unpacked.gender,
       message: unpacked.message,
       consultation_mode: normalizeConsultationMode(appointment.consultation_mode) ?? unpacked.consultation_mode,
       source: "cloud" as const,
-    };
+    } as AppointmentRecord;
   });
 
 export const mergeAppointments = (cloudAppointments: AppointmentRecord[], localAppointments: AppointmentRecord[]) =>

@@ -7,6 +7,7 @@ import { clinicContact } from "@/lib/contactDetails";
 import { slotLabelToSqlTime } from "@/lib/appointmentTime";
 import { buildStoredAppointmentMessage, removeLocalAppointment, saveLocalAppointment } from "@/lib/appointmentStore";
 import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, type ConsultationMode } from "@/lib/consultationMode";
+import { patientGenderOptions, type PatientGender } from "@/lib/patientGender";
 
 const services = [
   "Acne and Skin Treatment",
@@ -48,6 +49,19 @@ const ALL_TIME_SLOTS = [
   "7:45 PM - 8:00 PM",
 ];
 
+type AppointmentFormData = {
+  name: string;
+  phone: string;
+  email: string;
+  gender: PatientGender | "";
+  service: string;
+  consultationMode: ConsultationMode;
+  location: string;
+  date: string;
+  time: string;
+  message: string;
+};
+
 const AppointmentSection = () => {
   const sectionRef = useScrollReveal<HTMLElement>();
   const [submitted, setSubmitted] = useState(false);
@@ -55,10 +69,11 @@ const AppointmentSection = () => {
   const [offDates, setOffDates] = useState<string[]>([]);
   const [disabledSlots, setDisabledSlots] = useState<string[]>([]);
   const [savedMode, setSavedMode] = useState<"cloud" | "local">("cloud");
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AppointmentFormData>({
     name: "",
     phone: "",
     email: "",
+    gender: "",
     service: "",
     consultationMode: "offline" as ConsultationMode,
     location: "",
@@ -96,9 +111,9 @@ const AppointmentSection = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (name === "date") {
-      setFormData({ ...formData, date: value, time: "" });
+      setFormData({ ...formData, date: value, time: "" } as AppointmentFormData);
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData({ ...formData, [name]: value } as AppointmentFormData);
     }
   };
 
@@ -112,6 +127,7 @@ const AppointmentSection = () => {
       name: "",
       phone: "",
       email: "",
+      gender: "",
       service: "",
       consultationMode: "offline",
       location: "",
@@ -152,7 +168,7 @@ const AppointmentSection = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim() || !formData.phone.trim() || !formData.service || !formData.location) {
+    if (!formData.name.trim() || !formData.phone.trim() || !formData.gender || !formData.service || !formData.location) {
       toast.error("Please fill in all required fields.");
       return;
     }
@@ -180,11 +196,12 @@ const AppointmentSection = () => {
         location: formData.location,
         preferred_date: formData.date || null,
         preferred_time: preferredTime,
-        message: buildStoredAppointmentMessage(formData.message.trim() || null, formData.consultationMode),
+        message: buildStoredAppointmentMessage(formData.message.trim() || null, formData.consultationMode, formData.gender || null),
       };
 
       const localRecord = saveLocalAppointment({
         ...appointmentPayload,
+        gender: formData.gender || null,
         message: formData.message.trim() || null,
         consultation_mode: formData.consultationMode,
       });
@@ -328,17 +345,37 @@ const AppointmentSection = () => {
               </div>
             </div>
 
-            <div className="mb-4">
-              <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Email</label>
-              <input
-                name="email"
-                type="email"
-                maxLength={255}
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
-                placeholder="you@example.com"
-              />
+            <div className="grid sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Email</label>
+                <input
+                  name="email"
+                  type="email"
+                  maxLength={255}
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Gender *</label>
+                <select
+                  name="gender"
+                  required
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                >
+                  <option value="">Select gender</option>
+                  {patientGenderOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-4">

@@ -16,6 +16,7 @@ import type { AppointmentRecord } from "@/lib/appointmentStore";
 import { sqlTimeToSlotLabel } from "@/lib/appointmentTime";
 import { clinicBrand } from "@/lib/clinicBrand";
 import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, normalizeConsultationMode, type ConsultationMode } from "@/lib/consultationMode";
+import { normalizePatientGender, patientGenderOptions } from "@/lib/patientGender";
 import { cn } from "@/lib/utils";
 
 const formatMoney = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
@@ -81,7 +82,7 @@ const createEmptyDraft = (): BillDraft => ({
   patientName: "",
   phone: "",
   age: "Adult",
-  gender: "Patient",
+  gender: "",
   service: "Consultation",
   consultationMode: "offline",
   billDate: todayKey(),
@@ -113,6 +114,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
       ...current,
       patientName: appointment.name,
       phone: appointment.phone,
+      gender: appointment.gender ?? "",
       service: appointment.service || "Consultation",
       consultationMode,
       billDate: options?.keepExistingDate ? current.billDate : appointment.preferred_date || current.billDate || todayKey(),
@@ -128,7 +130,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
       patientName: bill.patientName,
       phone: bill.phone,
       age: bill.age,
-      gender: bill.gender,
+      gender: normalizePatientGender(bill.gender) ?? "",
       service: bill.visitType || bill.items[0]?.label || "Consultation",
       consultationMode: normalizeConsultationMode(bill.consultationMode) ?? "offline",
       billDate: bill.date.slice(0, 10),
@@ -197,6 +199,11 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
       return;
     }
 
+    if (!normalizePatientGender(draft.gender)) {
+      toast.error("Please select patient gender.");
+      return;
+    }
+
     if (billingMode === "appointment" && !selectedAppointmentId) {
       toast.error("Select an appointment or switch to manual billing.");
       return;
@@ -219,7 +226,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
       patientName: draft.patientName.trim(),
       phone: draft.phone.trim(),
       age: draft.age.trim() || "Adult",
-      gender: draft.gender.trim() || "Patient",
+      gender: normalizePatientGender(draft.gender) || "Others",
       doctorName: clinicBrand.doctorName,
       doctorSpeciality: clinicBrand.doctorSpeciality,
       clinicName: clinicBrand.name,
@@ -373,11 +380,18 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
               </label>
               <label className="block text-sm font-medium text-foreground">
                 Gender
-                <input
+                <select
                   value={draft.gender}
                   onChange={(event) => setDraft((current) => ({ ...current, gender: event.target.value }))}
                   className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none"
-                />
+                >
+                  <option value="">Select gender</option>
+                  {patientGenderOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
 
