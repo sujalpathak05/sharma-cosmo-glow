@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
+import { Helmet } from "react-helmet-async";
+import { clinicContact } from "@/lib/contactDetails";
 
 const AboutSection = lazy(() => import("@/components/AboutSection"));
 const ServicesSection = lazy(() => import("@/components/ServicesSection"));
@@ -9,12 +11,8 @@ const AppointmentSection = lazy(() => import("@/components/AppointmentSection"))
 const GallerySection = lazy(() => import("@/components/GallerySection"));
 const TestimonialsSection = lazy(() => import("@/components/TestimonialsSection"));
 const ContactSection = lazy(() => import("@/components/ContactSection"));
-const SeoContentSection = lazy(() => import("@/components/SeoContentSection"));
 const Footer = lazy(() => import("@/components/Footer"));
 const FloatingButtons = lazy(() => import("@/components/FloatingButtons"));
-import { Helmet } from "react-helmet-async";
-import { clinicContact } from "@/lib/contactDetails";
-import { homeFaqs } from "@/data/homeSeo";
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -57,17 +55,6 @@ const jsonLd = {
         "name": "Dr. Vishikant Sharma",
         "description": "MBBS, CCEBDM, PGDCC, Fellowship in Aesthetic Medicine"
       }
-    },
-    {
-      "@type": "FAQPage",
-      "mainEntity": homeFaqs.map((item) => ({
-        "@type": "Question",
-        "name": item.question,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": item.answer
-        }
-      }))
     }
   ]
 };
@@ -100,7 +87,6 @@ const Index = () => {
         <Suspense fallback={<div className="min-h-[40vh]" />}>
           <AboutSection />
           <ServicesSection />
-          <SeoContentSection />
           <AppointmentSection />
           <GallerySection />
           <TestimonialsSection />
