@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import gallery1 from "@/assets/clinic-gallery-1.jpg";
 import gallery2 from "@/assets/clinic-gallery-2.jpg";
 import gallery3 from "@/assets/clinic-gallery-3.jpg";
-import heroImg from "@/assets/hero-clinic.jpg";
+import heroImg from "@/assets/hero-clinic.webp";
 
 const images = [
   { src: heroImg, alt: "Advanced treatment room", label: "Treatment Room" },
