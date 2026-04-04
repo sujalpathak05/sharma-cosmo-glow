@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import gallery1 from "@/assets/clinic-gallery-1.jpg";
-import gallery2 from "@/assets/clinic-gallery-2.jpg";
-import gallery3 from "@/assets/clinic-gallery-3.jpg";
+import gallery1 from "@/assets/clinic-gallery-1.webp";
+import gallery2 from "@/assets/clinic-gallery-2.webp";
+import gallery3 from "@/assets/clinic-gallery-3.webp";
 import heroImg from "@/assets/hero-clinic.webp";
 
 const images = [
