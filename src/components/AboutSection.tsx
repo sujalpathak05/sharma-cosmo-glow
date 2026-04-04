@@ -1,4 +1,4 @@
-import doctorImage from "@/assets/doctor-profile.jpg";
+import doctorImage from "@/assets/doctor-profile.webp";
 import { useEffect, useRef, useState } from "react";
 import { GraduationCap, Stethoscope, Heart, Award, ArrowRight } from "lucide-react";
 

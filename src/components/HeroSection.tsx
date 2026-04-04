@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
-import heroImage from "@/assets/hero-clinic.jpg";
+import heroImage from "@/assets/hero-clinic.webp";
 
 const heroHighlights = [
   "Personalized acne and pigmentation care",
