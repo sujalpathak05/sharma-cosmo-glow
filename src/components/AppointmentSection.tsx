@@ -9,47 +9,7 @@ import { buildStoredAppointmentMessage, removeLocalAppointment, saveLocalAppoint
 import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, type ConsultationMode } from "@/lib/consultationMode";
 import { patientGenderOptions, type PatientGender } from "@/lib/patientGender";
 
-const services = [
-  "Acne and Skin Treatment",
-  "Chemical Peel Treatment",
-  "PRP Hair Treatment",
-  "Laser Hair Removal",
-  "Botox and Anti-Aging Treatment",
-  "Aesthetic Consultations",
-  "Laser - Full body (Rs. 60,000)",
-  "Laser - Face (Rs. 30,000)",
-  "Laser - Bikini area (Rs. 30,000)",
-  "Laser - Under arm (Rs. 15,000)",
-  "Laser - Both arm (Rs. 20,000)",
-  "Laser - Both leg (Rs. 30,000)",
-  "Laser - Trial (Rs. 30,000)",
-  "PRP (Rs. 3,000)",
-  "GFC (Rs. 4,500)",
-  "Mizo (Rs. 5,500)",
-];
-
-const pricingGroups = [
-  {
-    title: "Laser",
-    rows: [
-      { label: "Full body", price: "60,000" },
-      { label: "Face", price: "30,000" },
-      { label: "Bikini area", price: "30,000" },
-      { label: "Under arm", price: "15,000" },
-      { label: "Both arm", price: "20,000" },
-      { label: "Both leg", price: "30,000" },
-      { label: "Trial", price: "30,000" },
-    ],
-  },
-  {
-    title: "Hair Therapy",
-    rows: [
-      { label: "PRP", price: "3,000" },
-      { label: "GFC", price: "4,500" },
-      { label: "Mizo", price: "5,500" },
-    ],
-  },
-];
+import { serviceOptions, pricingGroups, getServicePrice, formatServicePrice } from "@/lib/servicePricing";
 
 const locations = [{ value: "Noida", label: "Noida" }];
 
