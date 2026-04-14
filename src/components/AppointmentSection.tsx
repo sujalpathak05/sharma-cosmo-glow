@@ -382,10 +382,17 @@ const AppointmentSection = () => {
                   className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                 >
                   <option value="">Select a service</option>
-                  {services.map((service) => (
-                    <option key={service} value={service}>{service}</option>
+                  {serviceOptions.map((s) => (
+                    <option key={s.label} value={s.label}>
+                      {s.label}{s.price ? ` (₹${s.price.toLocaleString("en-IN")})` : ""}
+                    </option>
                   ))}
                 </select>
+                {formData.service && getServicePrice(formData.service) !== null && (
+                  <p className="mt-1.5 text-sm font-semibold text-primary">
+                    Price: {formatServicePrice(getServicePrice(formData.service)!)}
+                  </p>
+                )}
               </div>
 
               <div>
