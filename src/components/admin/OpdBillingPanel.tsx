@@ -42,6 +42,15 @@ const estimateOpdAmount = (service: string, consultationMode: string | null | un
   if (normalizedMode) return getConsultationFee(normalizedMode);
 
   const value = service.toLowerCase();
+  if (value.includes("full body")) return 60000;
+  if (value.includes("bikini")) return 30000;
+  if (value.includes("under arm") || value.includes("underarm")) return 15000;
+  if (value.includes("both arm")) return 20000;
+  if (value.includes("both leg")) return 30000;
+  if (value.includes("laser") && value.includes("face")) return 30000;
+  if (value.includes("laser") && value.includes("trial")) return 30000;
+  if (value.includes("mizo")) return 5500;
+  if (value.includes("gfc")) return 4500;
   if (value.includes("filler")) return 18000;
   if (value.includes("botox")) return 12000;
   if (value.includes("laser")) return 4500;

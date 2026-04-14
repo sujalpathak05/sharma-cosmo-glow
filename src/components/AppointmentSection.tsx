@@ -16,6 +16,39 @@ const services = [
   "Laser Hair Removal",
   "Botox and Anti-Aging Treatment",
   "Aesthetic Consultations",
+  "Laser - Full body (Rs. 60,000)",
+  "Laser - Face (Rs. 30,000)",
+  "Laser - Bikini area (Rs. 30,000)",
+  "Laser - Under arm (Rs. 15,000)",
+  "Laser - Both arm (Rs. 20,000)",
+  "Laser - Both leg (Rs. 30,000)",
+  "Laser - Trial (Rs. 30,000)",
+  "PRP (Rs. 3,000)",
+  "GFC (Rs. 4,500)",
+  "Mizo (Rs. 5,500)",
+];
+
+const pricingGroups = [
+  {
+    title: "Laser",
+    rows: [
+      { label: "Full body", price: "60,000" },
+      { label: "Face", price: "30,000" },
+      { label: "Bikini area", price: "30,000" },
+      { label: "Under arm", price: "15,000" },
+      { label: "Both arm", price: "20,000" },
+      { label: "Both leg", price: "30,000" },
+      { label: "Trial", price: "30,000" },
+    ],
+  },
+  {
+    title: "Hair Therapy",
+    rows: [
+      { label: "PRP", price: "3,000" },
+      { label: "GFC", price: "4,500" },
+      { label: "Mizo", price: "5,500" },
+    ],
+  },
 ];
 
 const locations = [{ value: "Noida", label: "Noida" }];
@@ -426,6 +459,25 @@ const AppointmentSection = () => {
                     <option key={location.value} value={location.value}>{location.label}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="mb-4 rounded-[1.25rem] border border-[#ead7b0] bg-[#fff8ed] px-4 py-4">
+              <p className="font-body text-xs uppercase tracking-[0.18em] text-[#a16c23]">Service Price List</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {pricingGroups.map((group) => (
+                  <div key={group.title} className="rounded-xl border border-[#eeddbb] bg-white/80 p-3">
+                    <p className="font-body text-sm font-semibold text-foreground">{group.title}</p>
+                    <div className="mt-2 space-y-1.5">
+                      {group.rows.map((row) => (
+                        <p key={row.label} className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                          <span>{row.label}</span>
+                          <span className="font-semibold text-[#8c5c1e]">Rs. {row.price}</span>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

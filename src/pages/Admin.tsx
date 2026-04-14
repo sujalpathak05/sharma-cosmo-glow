@@ -21,6 +21,7 @@ import {
   MessageSquare,
   Phone,
   RefreshCw,
+  Search,
   Settings,
   Star,
   Users,
@@ -154,6 +155,16 @@ const appointmentMs = (appointment: Appointment) => {
 const estimateValue = (service: string, consultationMode?: string | null) => {
   if (consultationMode) return getConsultationFee(consultationMode);
   const value = service.toLowerCase();
+  if (value.includes("full body")) return 60000;
+  if (value.includes("bikini")) return 30000;
+  if (value.includes("under arm") || value.includes("underarm")) return 15000;
+  if (value.includes("both arm")) return 20000;
+  if (value.includes("both leg")) return 30000;
+  if (value.includes("laser") && value.includes("face")) return 30000;
+  if (value.includes("laser") && value.includes("trial")) return 30000;
+  if (value.includes("mizo")) return 5500;
+  if (value.includes("gfc")) return 4500;
+  if (value.includes("prp")) return 3000;
   if (value.includes("filler")) return 18000;
   if (value.includes("botox")) return 12000;
   if (value.includes("laser")) return 4500;
@@ -204,6 +215,7 @@ const Admin = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [appointmentSearch, setAppointmentSearch] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -298,7 +310,13 @@ const Admin = () => {
   const confirmedCount = appointments.filter((item) => item.status === "confirmed").length;
   const completedCount = appointments.filter((item) => item.status === "completed").length;
   const cancelledCount = appointments.filter((item) => item.status === "cancelled").length;
-  const filteredAppointments = filterStatus === "all" ? appointments : appointments.filter((item) => item.status === filterStatus);
+  const appointmentSearchTerm = appointmentSearch.trim().toLowerCase();
+  const filteredAppointments = appointments.filter((item) => {
+    const matchesStatus = filterStatus === "all" || item.status === filterStatus;
+    if (!matchesStatus) return false;
+    if (!appointmentSearchTerm) return true;
+    return item.name.toLowerCase().includes(appointmentSearchTerm);
+  });
   const upcomingAppointments = [...appointments]
     .filter((item) => item.preferred_date && item.preferred_date >= todayKey && item.status !== "cancelled")
     .sort((left, right) => appointmentMs(left) - appointmentMs(right));
@@ -394,7 +412,7 @@ const Admin = () => {
 
   const renderAppointmentQueue = () => {
     if (loading) return <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-    if (filteredAppointments.length === 0) return <EmptyState message="No appointments match the current filter." />;
+    if (filteredAppointments.length === 0) return <EmptyState message={appointmentSearchTerm ? "No appointments found for this name." : "No appointments match the current filter."} />;
     return (
       <div className="space-y-4">
         {filteredAppointments.map((item) => (
@@ -455,7 +473,16 @@ const Admin = () => {
     if (activeSection === "appointments") {
       return (
         <Panel title="Appointment queue" subtitle="Review every booking and keep the front desk moving." action={<button onClick={async () => { await fetchAppointments(); toast.success("Queue refreshed"); }} disabled={loading} className="inline-flex items-center gap-2 rounded-full border border-[#e8c98d] bg-white/75 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-white disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh queue</button>}>
-          <div className="mb-5 flex flex-wrap items-center gap-2"><Filter className="h-4 w-4 text-muted-foreground" />{["all", "pending", "confirmed", "completed", "cancelled"].map((status) => <button key={status} onClick={() => setFilterStatus(status)} className={cn("rounded-full px-4 py-2 text-sm font-medium capitalize transition", filterStatus === status ? "bg-gradient-to-r from-[#f2aa34] to-[#eb8d45] text-white shadow-lg shadow-orange-200/60" : "bg-white/70 text-muted-foreground hover:text-foreground")}>{status}</button>)}</div>
+          <div className="mb-5 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              {["all", "pending", "confirmed", "completed", "cancelled"].map((status) => <button key={status} onClick={() => setFilterStatus(status)} className={cn("rounded-full px-4 py-2 text-sm font-medium capitalize transition", filterStatus === status ? "bg-gradient-to-r from-[#f2aa34] to-[#eb8d45] text-white shadow-lg shadow-orange-200/60" : "bg-white/70 text-muted-foreground hover:text-foreground")}>{status}</button>)}
+            </div>
+            <div className="flex max-w-md items-center gap-2 rounded-full border border-[#dfd4bb] bg-white px-4 py-2 text-sm text-muted-foreground">
+              <Search className="h-4 w-4" />
+              <input value={appointmentSearch} onChange={(event) => setAppointmentSearch(event.target.value)} placeholder="Search by patient name" className="w-full bg-transparent outline-none" />
+            </div>
+          </div>
           {renderAppointmentQueue()}
         </Panel>
       );
@@ -595,4 +622,3 @@ const Admin = () => {
 };
 
 export default Admin;
-
