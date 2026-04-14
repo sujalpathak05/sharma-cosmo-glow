@@ -63,10 +63,10 @@ const estimateOpdAmount = (service: string, consultationMode: string | null | un
   return 1500;
 };
 
-const manualServiceOptions = [
-  { label: "Consultation", amount: getConsultationFee("offline") },
-  { label: "PRP Treatment", amount: 3000 },
-] as const;
+const manualServiceOptions = serviceOptions.map((s) => ({
+  label: s.label,
+  amount: s.price ?? getConsultationFee("offline"),
+}));
 
 type BillingMode = "appointment" | "manual";
 
