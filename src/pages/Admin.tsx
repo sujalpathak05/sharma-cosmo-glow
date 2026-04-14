@@ -484,7 +484,7 @@ const Admin = () => {
             </div>
             <div className="flex max-w-md items-center gap-2 rounded-full border border-[#dfd4bb] bg-white px-4 py-2 text-sm text-muted-foreground">
               <Search className="h-4 w-4" />
-              <input value={appointmentSearch} onChange={(event) => setAppointmentSearch(event.target.value)} placeholder="Search by patient name" className="w-full bg-transparent outline-none" />
+              <input value={appointmentSearch} onChange={(event) => setAppointmentSearch(event.target.value)} placeholder="Search by name or phone" className="w-full bg-transparent outline-none" />
             </div>
           </div>
           {renderAppointmentQueue()}
