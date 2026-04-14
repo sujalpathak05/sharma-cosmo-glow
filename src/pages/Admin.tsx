@@ -48,6 +48,7 @@ import {
   updateLocalAppointmentStatus,
 } from "@/lib/appointmentStore";
 import { getConsultationFee, getConsultationModeLabel } from "@/lib/consultationMode";
+import { getServicePrice, formatServicePrice } from "@/lib/servicePricing";
 import { cn } from "@/lib/utils";
 
 type Appointment = AppointmentRecord;
@@ -315,7 +316,7 @@ const Admin = () => {
     const matchesStatus = filterStatus === "all" || item.status === filterStatus;
     if (!matchesStatus) return false;
     if (!appointmentSearchTerm) return true;
-    return item.name.toLowerCase().includes(appointmentSearchTerm);
+    return item.name.toLowerCase().includes(appointmentSearchTerm) || item.phone.includes(appointmentSearchTerm);
   });
   const upcomingAppointments = [...appointments]
     .filter((item) => item.preferred_date && item.preferred_date >= todayKey && item.status !== "cancelled")
@@ -425,6 +426,9 @@ const Admin = () => {
                   <span className={cn("rounded-full px-3 py-1 text-xs font-semibold capitalize", statusColors[item.status] || "bg-muted text-muted-foreground")}>{item.status}</span>
                 </div>
                 <p className="mt-2 text-sm font-medium uppercase tracking-[0.18em] text-[#b67e34]">{item.service}</p>
+                {getServicePrice(item.service) !== null && (
+                  <p className="mt-1 text-sm font-semibold text-primary">{formatServicePrice(getServicePrice(item.service)!)}</p>
+                )}
                 <p className="mt-1 text-sm text-muted-foreground">{getConsultationModeLabel(item.consultation_mode)}</p>
                 <div className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 xl:grid-cols-3">
                   <span className="flex items-center gap-2"><Phone className="h-4 w-4" />{item.phone}</span>
@@ -480,7 +484,7 @@ const Admin = () => {
             </div>
             <div className="flex max-w-md items-center gap-2 rounded-full border border-[#dfd4bb] bg-white px-4 py-2 text-sm text-muted-foreground">
               <Search className="h-4 w-4" />
-              <input value={appointmentSearch} onChange={(event) => setAppointmentSearch(event.target.value)} placeholder="Search by patient name" className="w-full bg-transparent outline-none" />
+              <input value={appointmentSearch} onChange={(event) => setAppointmentSearch(event.target.value)} placeholder="Search by name or phone" className="w-full bg-transparent outline-none" />
             </div>
           </div>
           {renderAppointmentQueue()}
