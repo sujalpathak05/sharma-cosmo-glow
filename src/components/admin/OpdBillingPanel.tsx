@@ -17,6 +17,26 @@ import { sqlTimeToSlotLabel } from "@/lib/appointmentTime";
 import { clinicBrand } from "@/lib/clinicBrand";
 import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, normalizeConsultationMode, type ConsultationMode } from "@/lib/consultationMode";
 import { normalizePatientGender, patientGenderOptions } from "@/lib/patientGender";
+import { serviceOptions, getServicePrice, formatServicePrice } from "@/lib/servicePricing";
+import { cn } from "@/lib/utils";
+import { CalendarClock, Download, Edit3, Plus, ReceiptText } from "lucide-react";
+import { toast } from "sonner";
+
+import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
+import {
+  type OpdBill,
+  createOpdBillRecord,
+  createPatientId,
+  findOpdBillByAppointmentId,
+  readClinicAdminData,
+  subscribeClinicAdminData,
+  updateOpdBillRecord,
+} from "@/lib/clinicAdminStore";
+import type { AppointmentRecord } from "@/lib/appointmentStore";
+import { sqlTimeToSlotLabel } from "@/lib/appointmentTime";
+import { clinicBrand } from "@/lib/clinicBrand";
+import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, normalizeConsultationMode, type ConsultationMode } from "@/lib/consultationMode";
+import { normalizePatientGender, patientGenderOptions } from "@/lib/patientGender";
 import { cn } from "@/lib/utils";
 
 const formatMoney = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
