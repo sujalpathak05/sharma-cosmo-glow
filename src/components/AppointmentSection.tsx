@@ -429,24 +429,6 @@ const AppointmentSection = () => {
               </div>
             </div>
 
-            <div className="mb-4 rounded-[1.25rem] border border-[#ead7b0] bg-[#fff8ed] px-4 py-4">
-              <p className="font-body text-xs uppercase tracking-[0.18em] text-[#a16c23]">Service Price List</p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {pricingGroups.map((group) => (
-                  <div key={group.title} className="rounded-xl border border-[#eeddbb] bg-white/80 p-3">
-                    <p className="font-body text-sm font-semibold text-foreground">{group.title}</p>
-                    <div className="mt-2 space-y-1.5">
-                      {group.rows.map((row) => (
-                        <p key={row.label} className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                          <span>{row.label}</span>
-                          <span className="font-semibold text-[#8c5c1e]">Rs. {row.price}</span>
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             <div className="mb-4 rounded-[1.25rem] border border-[#ead7b0] bg-[#fff8ed] px-4 py-4">
               <p className="font-body text-xs uppercase tracking-[0.18em] text-[#a16c23]">Consultation Fee</p>

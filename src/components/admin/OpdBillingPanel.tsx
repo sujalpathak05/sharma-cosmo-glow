@@ -17,6 +17,7 @@ import { sqlTimeToSlotLabel } from "@/lib/appointmentTime";
 import { clinicBrand } from "@/lib/clinicBrand";
 import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, normalizeConsultationMode, type ConsultationMode } from "@/lib/consultationMode";
 import { normalizePatientGender, patientGenderOptions } from "@/lib/patientGender";
+import { serviceOptions, getServicePrice, formatServicePrice } from "@/lib/servicePricing";
 import { cn } from "@/lib/utils";
 
 const formatMoney = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
@@ -62,10 +63,10 @@ const estimateOpdAmount = (service: string, consultationMode: string | null | un
   return 1500;
 };
 
-const manualServiceOptions = [
-  { label: "Consultation", amount: getConsultationFee("offline") },
-  { label: "PRP Treatment", amount: 3000 },
-] as const;
+const manualServiceOptions = serviceOptions.map((s) => ({
+  label: s.label,
+  amount: s.price ?? getConsultationFee("offline"),
+}));
 
 type BillingMode = "appointment" | "manual";
 
