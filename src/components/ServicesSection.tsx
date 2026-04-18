@@ -13,6 +13,8 @@ const skinServices = [
   { icon: Scissors, title: "Aesthetic Consultations", desc: "Personalized consultations for glow goals, event preparation, pigmentation correction, and doctor-guided cosmetic treatment planning.", detail: "Every recommendation is explained in clear terms so you understand the expected benefit, downtime, and maintenance before you proceed." },
 ];
 
+const services = [...skinServices.slice(0, 2), ...hairServices, ...skinServices.slice(2)];
+
 const ServicesSection = () => {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [visible, setVisible] = useState(false);
