@@ -9,9 +9,8 @@ import { buildStoredAppointmentMessage, removeLocalAppointment, saveLocalAppoint
 import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, type ConsultationMode } from "@/lib/consultationMode";
 import { patientGenderOptions, type PatientGender } from "@/lib/patientGender";
 
-import { serviceOptions, pricingGroups, getServicePrice, formatServicePrice } from "@/lib/servicePricing";
-
 const locations = [{ value: "Noida", label: "Noida" }];
+const appointmentServiceOptions = [{ label: "Hair Solution" }, { label: "Skin Solution" }];
 
 const ALL_TIME_SLOTS = [
   "11:00 AM - 11:15 AM",
@@ -382,17 +381,12 @@ const AppointmentSection = () => {
                   className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
                 >
                   <option value="">Select a service</option>
-                  {serviceOptions.map((s) => (
-                    <option key={s.label} value={s.label}>
-                      {s.label}{s.price ? ` (₹${s.price.toLocaleString("en-IN")})` : ""}
+                  {appointmentServiceOptions.map((option) => (
+                    <option key={option.label} value={option.label}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
-                {formData.service && getServicePrice(formData.service) !== null && (
-                  <p className="mt-1.5 text-sm font-semibold text-primary">
-                    Price: {formatServicePrice(getServicePrice(formData.service)!)}
-                  </p>
-                )}
               </div>
 
               <div>
@@ -504,3 +498,4 @@ const AppointmentSection = () => {
 };
 
 export default AppointmentSection;
+
