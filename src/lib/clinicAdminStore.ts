@@ -5,6 +5,8 @@ import type { Json, Tables } from "@/integrations/supabase/types";
 import { clinicBrand } from "@/lib/clinicBrand";
 import { getConsultationFee, normalizeConsultationMode, type ConsultationMode } from "@/lib/consultationMode";
 
+export type PaymentMode = "online" | "offline";
+
 export type OpdBillItem = {
   label: string;
   qty: number;
@@ -31,6 +33,7 @@ export type OpdBill = {
   status: "paid" | "due" | "refunded";
   paidAmount: number;
   totalAmount: number;
+  paymentMode: PaymentMode;
   consultationMode: ConsultationMode | null;
   visitType: string;
   items: OpdBillItem[];
@@ -125,6 +128,7 @@ const seedData: ClinicAdminData = {
       status: "paid",
       paidAmount: 800,
       totalAmount: 800,
+      paymentMode: "offline",
       consultationMode: "offline",
       visitType: "Consultation",
       items: [{ label: "Consultation", qty: 1, rate: 800, discount: 0, gst: 0, total: 800 }],
@@ -164,6 +168,14 @@ const normalizeOpdBillItem = (item: Partial<OpdBillItem> | null | undefined): Op
   total: typeof item?.total === "number" ? item.total : (typeof item?.rate === "number" ? item.rate : getConsultationFee("offline")),
 });
 
+export const normalizePaymentMode = (value: string | null | undefined): PaymentMode => (
+  value === "online" ? "online" : "offline"
+);
+
+export const getPaymentModeLabel = (value: string | null | undefined) => (
+  normalizePaymentMode(value) === "online" ? "Online Payment" : "Cash"
+);
+
 const normalizeOpdBill = (bill: Partial<OpdBill> | null | undefined, index: number): OpdBill => {
   const consultationMode = normalizeConsultationMode(bill?.consultationMode);
   const totalAmount = typeof bill?.totalAmount === "number" ? bill.totalAmount : getConsultationFee(consultationMode);
@@ -185,6 +197,7 @@ const normalizeOpdBill = (bill: Partial<OpdBill> | null | undefined, index: numb
     status: bill?.status === "due" || bill?.status === "refunded" ? bill.status : "paid",
     paidAmount: typeof bill?.paidAmount === "number" ? bill.paidAmount : totalAmount,
     totalAmount,
+    paymentMode: normalizePaymentMode(bill?.paymentMode),
     consultationMode,
     visitType: typeof bill?.visitType === "string" && bill.visitType.trim()
       ? bill.visitType

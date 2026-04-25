@@ -4,10 +4,13 @@ import { toast } from "sonner";
 
 import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
 import {
+  type PaymentMode,
   type OpdBill,
   createOpdBillRecord,
   createPatientId,
   findOpdBillByAppointmentId,
+  getPaymentModeLabel,
+  normalizePaymentMode,
   readClinicAdminData,
   subscribeClinicAdminData,
   updateOpdBillRecord,
@@ -17,7 +20,7 @@ import { sqlTimeToSlotLabel } from "@/lib/appointmentTime";
 import { clinicBrand } from "@/lib/clinicBrand";
 import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, normalizeConsultationMode, type ConsultationMode } from "@/lib/consultationMode";
 import { normalizePatientGender, patientGenderOptions } from "@/lib/patientGender";
-import { serviceOptions, getServicePrice, formatServicePrice } from "@/lib/servicePricing";
+import { serviceOptions } from "@/lib/servicePricing";
 import { cn } from "@/lib/utils";
 
 const formatMoney = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
@@ -68,6 +71,11 @@ const manualServiceOptions = serviceOptions.map((s) => ({
   amount: s.price ?? getConsultationFee("offline"),
 }));
 
+const paymentModeOptions: Array<{ value: PaymentMode; label: string }> = [
+  { value: "offline", label: "Cash" },
+  { value: "online", label: "Online Payment" },
+];
+
 type BillingMode = "appointment" | "manual";
 
 type BillDraft = {
@@ -79,6 +87,7 @@ type BillDraft = {
   consultationMode: ConsultationMode;
   billDate: string;
   status: OpdBill["status"];
+  paymentMode: PaymentMode;
   amount: number;
 };
 
@@ -97,6 +106,7 @@ const createEmptyDraft = (): BillDraft => ({
   consultationMode: "offline",
   billDate: todayKey(),
   status: "paid",
+  paymentMode: "offline",
   amount: getConsultationFee("offline"),
 });
 
@@ -145,6 +155,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
       consultationMode: normalizeConsultationMode(bill.consultationMode) ?? "offline",
       billDate: bill.date.slice(0, 10),
       status: bill.status,
+      paymentMode: normalizePaymentMode(bill.paymentMode),
       amount: bill.totalAmount,
     });
   };
@@ -245,6 +256,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
       status: draft.status,
       paidAmount: draft.status === "paid" ? draft.amount : 0,
       totalAmount: draft.amount,
+      paymentMode: draft.paymentMode,
       consultationMode: draft.consultationMode,
       visitType: draft.service.trim() || "Consultation",
       items: [
@@ -473,7 +485,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
               </label>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <label className="block text-sm font-medium text-foreground">
                 Bill Status
                 <select
@@ -484,6 +496,20 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
                   <option value="paid">Paid</option>
                   <option value="due">Due</option>
                   <option value="refunded">Refunded</option>
+                </select>
+              </label>
+              <label className="block text-sm font-medium text-foreground">
+                Payment Mode
+                <select
+                  value={draft.paymentMode}
+                  onChange={(event) => setDraft((current) => ({ ...current, paymentMode: event.target.value as PaymentMode }))}
+                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none"
+                >
+                  {paymentModeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="block text-sm font-medium text-foreground">
@@ -508,6 +534,9 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
                   <p className="mt-2 font-semibold text-foreground">{draft.patientName || "Patient name pending"}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {draft.service} • {getConsultationModeLabel(draft.consultationMode)} • {formatMoney(draft.amount)}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Payment mode: {getPaymentModeLabel(draft.paymentMode)}
                   </p>
                   {billingMode === "appointment" && selectedAppointmentId ? (
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -552,6 +581,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
               { label: "Doctor", value: clinicBrand.doctorName },
               { label: "Speciality", value: clinicBrand.doctorSpeciality },
               { label: "Mode", value: getConsultationModeLabel(draft.consultationMode) },
+              { label: "Payment Mode", value: getPaymentModeLabel(draft.paymentMode) },
               { label: "Address", value: clinicBrand.address },
             ]}
             items={[
@@ -591,7 +621,7 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
                 <span>Bill No</span>
                 <span>Patient</span>
                 <span>Date</span>
-                <span>Mode</span>
+                <span>Mode / Payment</span>
                 <span>Amount</span>
                 <span>Actions</span>
               </div>
@@ -609,7 +639,10 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
                       <p className="mt-1 text-xs text-muted-foreground">{bill.phone}</p>
                     </div>
                     <span>{formatDateOnly(bill.date)}</span>
-                    <span>{getConsultationModeLabel(bill.consultationMode)}</span>
+                    <div>
+                      <p>{getConsultationModeLabel(bill.consultationMode)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{getPaymentModeLabel(bill.paymentMode)}</p>
+                    </div>
                     <span>{formatMoney(bill.totalAmount)}</span>
                     <div className="flex items-center gap-2">
                       <button
