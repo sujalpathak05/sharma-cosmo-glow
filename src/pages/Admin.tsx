@@ -40,9 +40,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { slotLabelToSqlTime, sqlTimeToSlotLabel } from "@/lib/appointmentTime";
 import {
   type AppointmentRecord,
+  buildStoredAppointmentMessage,
   isLocalAppointmentId,
   localAppointmentsEventName,
   mergeAppointments,
+  normalizeAppointmentDateKey,
   normalizeCloudAppointments,
   readLocalAppointments,
   updateLocalAppointmentStatus,
@@ -83,6 +85,7 @@ type PatientProfile = {
   services: string[];
   lastSeen: string;
   nextVisit: string | null;
+  nextVisitDate: string | null;
   estimatedValue: number;
 };
 
@@ -115,6 +118,29 @@ const money = new Intl.NumberFormat("en-IN", {
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
 const toDateKey = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+const FOLLOW_UP_DAYS = 28;
+
+const addDaysToDateKey = (dateKey: string, days: number) => {
+  const date = new Date(`${dateKey}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setDate(date.getDate() + days);
+  return toDateKey(date);
+};
+
+const appointmentConfirmationDateKey = (appointment: Appointment) => {
+  const confirmedAt = normalizeAppointmentDateKey(appointment.confirmed_at);
+  if (confirmedAt) return confirmedAt;
+  if (appointment.status === "confirmed" || appointment.status === "completed") {
+    return normalizeAppointmentDateKey(appointment.created_at);
+  }
+  return null;
+};
+
+const appointmentFollowUpDateKey = (appointment: Appointment) => {
+  if (appointment.status === "cancelled") return null;
+  const confirmedDate = appointmentConfirmationDateKey(appointment);
+  return confirmedDate ? addDaysToDateKey(confirmedDate, FOLLOW_UP_DAYS) : null;
+};
 
 const formatDate = (value: string | null | undefined) => {
   if (!value) return "-";
@@ -277,19 +303,37 @@ const Admin = () => {
 
   const updateStatus = async (id: string, nextStatus: string) => {
     setUpdating(id);
+    const currentAppointment = appointments.find((item) => item.id === id);
+    const nextConfirmedAt =
+      nextStatus === "confirmed"
+        ? toDateKey(new Date())
+        : nextStatus === "completed"
+          ? currentAppointment
+            ? appointmentConfirmationDateKey(currentAppointment) ?? toDateKey(new Date())
+            : toDateKey(new Date())
+          : currentAppointment?.confirmed_at ?? null;
+    const nextMessage = currentAppointment
+      ? buildStoredAppointmentMessage(
+          currentAppointment.message,
+          currentAppointment.consultation_mode,
+          currentAppointment.gender,
+          nextConfirmedAt,
+        )
+      : undefined;
+
     if (isLocalAppointmentId(id)) {
-      updateLocalAppointmentStatus(id, nextStatus);
-      setAppointments((current) => current.map((item) => (item.id === id ? { ...item, status: nextStatus } : item)));
+      updateLocalAppointmentStatus(id, nextStatus, nextConfirmedAt);
+      setAppointments((current) => current.map((item) => (item.id === id ? { ...item, status: nextStatus, confirmed_at: nextConfirmedAt } : item)));
       setUpdating(null);
       return;
     }
 
-    const { error } = await supabase.from("appointments").update({ status: nextStatus }).eq("id", id);
+    const { error } = await supabase.from("appointments").update({ status: nextStatus, ...(nextMessage !== undefined ? { message: nextMessage } : {}) }).eq("id", id);
     if (error) {
       toast.error("Failed to update appointment status.");
     } else {
       toast.success(`Appointment marked as ${nextStatus}.`);
-      setAppointments((current) => current.map((item) => (item.id === id ? { ...item, status: nextStatus } : item)));
+      setAppointments((current) => current.map((item) => (item.id === id ? { ...item, status: nextStatus, confirmed_at: nextConfirmedAt } : item)));
     }
     setUpdating(null);
   };
@@ -324,6 +368,43 @@ const Admin = () => {
   const callbackQueue = [...appointments].filter((item) => item.status === "pending").sort((left, right) => appointmentMs(right) - appointmentMs(left)).slice(0, 6);
   const feedbackQueue = [...appointments].filter((item) => item.status === "completed").sort((left, right) => appointmentMs(right) - appointmentMs(left)).slice(0, 6);
   const rescueQueue = [...appointments].filter((item) => item.status === "cancelled").sort((left, right) => appointmentMs(right) - appointmentMs(left)).slice(0, 6);
+  const getNextVisitCandidate = (appointment: Appointment) => {
+    const followUpDate = appointmentFollowUpDateKey(appointment);
+    if (followUpDate) {
+      return {
+        date: followUpDate,
+        label: `${formatDate(followUpDate)} • 28-day follow-up`,
+      };
+    }
+
+    if (appointment.preferred_date && appointment.preferred_date >= todayKey && appointment.status !== "cancelled") {
+      return {
+        date: appointment.preferred_date,
+        label: `${formatDate(appointment.preferred_date)} • ${sqlTimeToSlotLabel(appointment.preferred_time) ?? "Time TBD"}`,
+      };
+    }
+
+    return null;
+  };
+  const shouldUseNextVisitCandidate = (currentDate: string | null, candidateDate: string) => {
+    if (!currentDate) return true;
+    const currentUpcoming = currentDate >= todayKey;
+    const candidateUpcoming = candidateDate >= todayKey;
+    if (candidateUpcoming && !currentUpcoming) return true;
+    if (candidateUpcoming && currentUpcoming) return candidateDate < currentDate;
+    if (!candidateUpcoming && !currentUpcoming) return candidateDate > currentDate;
+    return false;
+  };
+  const followUpQueue = [...appointments]
+    .map((appointment) => ({
+      appointment,
+      confirmedDate: appointmentConfirmationDateKey(appointment),
+      followUpDate: appointmentFollowUpDateKey(appointment),
+    }))
+    .filter((item): item is { appointment: Appointment; confirmedDate: string; followUpDate: string } =>
+      Boolean(item.confirmedDate && item.followUpDate && item.followUpDate <= todayKey),
+    )
+    .sort((left, right) => left.followUpDate.localeCompare(right.followUpDate));
 
   const messageRows = [
     {
@@ -371,6 +452,7 @@ const Admin = () => {
 
   const patientMap = appointments.reduce<Map<string, PatientProfile>>((map, item) => {
     const key = item.phone || item.email || item.id;
+    const nextVisitCandidate = getNextVisitCandidate(item);
     const existing = map.get(key);
     if (existing) {
       existing.appointments += 1;
@@ -378,8 +460,9 @@ const Admin = () => {
       existing.upcoming += item.preferred_date && item.preferred_date >= todayKey && item.status !== "cancelled" ? 1 : 0;
       if (!existing.services.includes(item.service)) existing.services.push(item.service);
       existing.estimatedValue += estimateValue(item.service, item.consultation_mode);
-      if (!existing.nextVisit && item.preferred_date && item.preferred_date >= todayKey && item.status !== "cancelled") {
-        existing.nextVisit = `${formatDate(item.preferred_date)} • ${sqlTimeToSlotLabel(item.preferred_time) ?? "Time TBD"}`;
+      if (nextVisitCandidate && shouldUseNextVisitCandidate(existing.nextVisitDate, nextVisitCandidate.date)) {
+        existing.nextVisit = nextVisitCandidate.label;
+        existing.nextVisitDate = nextVisitCandidate.date;
       }
       return map;
     }
@@ -393,9 +476,8 @@ const Admin = () => {
       upcoming: item.preferred_date && item.preferred_date >= todayKey && item.status !== "cancelled" ? 1 : 0,
       services: [item.service],
       lastSeen: item.created_at,
-      nextVisit: item.preferred_date && item.preferred_date >= todayKey && item.status !== "cancelled"
-        ? `${formatDate(item.preferred_date)} • ${sqlTimeToSlotLabel(item.preferred_time) ?? "Time TBD"}`
-        : null,
+      nextVisit: nextVisitCandidate?.label ?? null,
+      nextVisitDate: nextVisitCandidate?.date ?? null,
       estimatedValue: estimateValue(item.service, item.consultation_mode),
     });
     return map;
@@ -527,18 +609,23 @@ const Admin = () => {
 
     if (activeSection === "patients") {
       return (
-        <Panel title="Patient base" subtitle="A quick roster of active patient profiles and their next milestones.">
-          {patients.length === 0 ? <EmptyState message="Patient roster will populate when appointments are available." /> : <div className="space-y-3">{patients.slice(0, 8).map((item) => <div key={item.key} className="rounded-[24px] border border-[#eddab7] bg-white/70 px-4 py-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.phone}</p>{item.email ? <p className="text-sm text-muted-foreground">{item.email}</p> : null}</div><div className="text-left sm:text-right"><p className="font-display text-2xl text-foreground">{item.appointments}</p><p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Appointments</p></div></div><div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2"><div><p className="font-medium text-foreground">Next visit</p><p className="mt-1">{item.nextVisit ?? "No upcoming visit"}</p></div><div><p className="font-medium text-foreground">Services</p><p className="mt-1">{item.services.join(", ")}</p></div></div></div>)}</div>}
+        <Panel title="Patient base" subtitle={`Showing all ${patients.length} patient profiles from ${appointments.length} appointments. Repeat bookings with the same phone/email are grouped into one profile.`}>
+          {patients.length === 0 ? <EmptyState message="Patient roster will populate when appointments are available." /> : <div className="space-y-3">{patients.map((item) => <div key={item.key} className="rounded-[24px] border border-[#eddab7] bg-white/70 px-4 py-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.phone}</p>{item.email ? <p className="text-sm text-muted-foreground">{item.email}</p> : null}</div><div className="text-left sm:text-right"><p className="font-display text-2xl text-foreground">{item.appointments}</p><p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Appointments</p></div></div><div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2"><div><p className="font-medium text-foreground">Next visit</p><p className="mt-1">{item.nextVisit ?? "No upcoming visit"}</p></div><div><p className="font-medium text-foreground">Services</p><p className="mt-1">{item.services.join(", ")}</p></div></div></div>)}</div>}
         </Panel>
       );
     }
 
     if (activeSection === "followups") {
       return (
-        <div className="grid gap-6 xl:grid-cols-3">
-          <Panel title="Callback queue" subtitle="Pending confirmations needing response.">{callbackQueue.length === 0 ? <EmptyState message="No pending callback requests right now." /> : <div className="space-y-3">{callbackQueue.map((item) => <div key={item.id} className="rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4"><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.phone}</p><p className="mt-1 text-sm text-muted-foreground">{item.service}</p></div>)}</div>}</Panel>
-          <Panel title="Feedback queue" subtitle="Completed visits ready for follow-up.">{feedbackQueue.length === 0 ? <EmptyState message="Completed appointments will appear here for follow-up." /> : <div className="space-y-3">{feedbackQueue.map((item) => <div key={item.id} className="rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4"><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.service}</p><p className="mt-1 text-sm text-muted-foreground">{item.phone}</p></div>)}</div>}</Panel>
-          <Panel title="Rescue queue" subtitle="Cancelled leads available for reactivation.">{rescueQueue.length === 0 ? <EmptyState message="No cancelled leads currently need rescue." /> : <div className="space-y-3">{rescueQueue.map((item) => <div key={item.id} className="rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4"><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.service}</p><p className="mt-1 text-sm text-muted-foreground">{item.phone}</p></div>)}</div>}</Panel>
+        <div className="space-y-6">
+          <Panel title="28-day follow-up" subtitle="Confirmed appointment ke 28 din baad due patients yahan automatically aayenge.">
+            {followUpQueue.length === 0 ? <EmptyState message="No 28-day follow-ups are due today." /> : <div className="space-y-3">{followUpQueue.map(({ appointment, confirmedDate, followUpDate }) => <div key={appointment.id} className="rounded-[24px] border border-[#eddab7] bg-white/70 px-4 py-4"><div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"><div><p className="font-medium text-foreground">{appointment.name}</p><p className="mt-1 text-sm text-muted-foreground">{appointment.phone}</p><p className="mt-1 text-sm text-muted-foreground">{appointment.service}</p></div><div className="text-left text-sm text-muted-foreground lg:text-right"><p><span className="font-medium text-foreground">Confirmed:</span> {formatDate(confirmedDate)}</p><p className="mt-1"><span className="font-medium text-foreground">Follow-up:</span> {formatDate(followUpDate)}</p><p className="mt-1 capitalize">{appointment.status}</p></div></div></div>)}</div>}
+          </Panel>
+          <div className="grid gap-6 xl:grid-cols-3">
+            <Panel title="Callback queue" subtitle="Pending confirmations needing response.">{callbackQueue.length === 0 ? <EmptyState message="No pending callback requests right now." /> : <div className="space-y-3">{callbackQueue.map((item) => <div key={item.id} className="rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4"><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.phone}</p><p className="mt-1 text-sm text-muted-foreground">{item.service}</p></div>)}</div>}</Panel>
+            <Panel title="Feedback queue" subtitle="Completed visits ready for follow-up.">{feedbackQueue.length === 0 ? <EmptyState message="Completed appointments will appear here for follow-up." /> : <div className="space-y-3">{feedbackQueue.map((item) => <div key={item.id} className="rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4"><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.service}</p><p className="mt-1 text-sm text-muted-foreground">{item.phone}</p></div>)}</div>}</Panel>
+            <Panel title="Rescue queue" subtitle="Cancelled leads available for reactivation.">{rescueQueue.length === 0 ? <EmptyState message="No cancelled leads currently need rescue." /> : <div className="space-y-3">{rescueQueue.map((item) => <div key={item.id} className="rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4"><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.service}</p><p className="mt-1 text-sm text-muted-foreground">{item.phone}</p></div>)}</div>}</Panel>
+          </div>
         </div>
       );
     }

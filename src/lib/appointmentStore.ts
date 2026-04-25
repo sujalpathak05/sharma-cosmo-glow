@@ -13,16 +13,17 @@ export type AppointmentRecord = {
   preferred_time: string | null;
   message: string | null;
   consultation_mode: ConsultationMode | null;
+  confirmed_at?: string | null;
   status: string;
   created_at: string;
   source: "cloud" | "local";
 };
 
-export type AppointmentDraft = Omit<AppointmentRecord, "id" | "status" | "created_at" | "source">;
+export type AppointmentDraft = Omit<AppointmentRecord, "id" | "status" | "confirmed_at" | "created_at" | "source">;
 
 const LOCAL_APPOINTMENTS_KEY = "sharma-cosmo-local-appointments";
 const LOCAL_APPOINTMENTS_EVENT = "appointments:local-updated";
-const APPOINTMENT_META_TOKEN = /^\[\[(consultation|gender):([a-z]+)\]\]\s*/i;
+const APPOINTMENT_META_TOKEN = /^\[\[(consultation|gender|confirmed_at):([^\]]+)\]\]\s*/i;
 
 const canUseStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 
@@ -40,12 +41,26 @@ const createLocalAppointmentId = () => {
   return `local-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
+export const normalizeAppointmentDateKey = (value: unknown) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+};
+
 const unpackAppointmentMessage = (value: unknown) => {
   if (typeof value !== "string") {
     return {
       message: null,
       gender: null as PatientGender | null,
       consultation_mode: null as ConsultationMode | null,
+      confirmed_at: null as string | null,
     };
   }
 
@@ -55,11 +70,13 @@ const unpackAppointmentMessage = (value: unknown) => {
       message: null,
       gender: null as PatientGender | null,
       consultation_mode: null as ConsultationMode | null,
+      confirmed_at: null as string | null,
     };
   }
 
   let consultationMode: ConsultationMode | null = null;
   let gender: PatientGender | null = null;
+  let confirmedAt: string | null = null;
 
   while (message) {
     const match = message.match(APPOINTMENT_META_TOKEN);
@@ -74,6 +91,10 @@ const unpackAppointmentMessage = (value: unknown) => {
       gender = normalizePatientGender(tokenValue);
     }
 
+    if (tokenName.toLowerCase() === "confirmed_at") {
+      confirmedAt = normalizeAppointmentDateKey(tokenValue);
+    }
+
     message = message.slice(match[0].length).trim();
   }
 
@@ -81,6 +102,7 @@ const unpackAppointmentMessage = (value: unknown) => {
     message: message || null,
     gender,
     consultation_mode: consultationMode,
+    confirmed_at: confirmedAt,
   };
 };
 
@@ -88,14 +110,17 @@ export const buildStoredAppointmentMessage = (
   message: string | null | undefined,
   consultationMode: ConsultationMode | null | undefined,
   gender?: PatientGender | null,
+  confirmedAt?: string | null,
 ) => {
   const normalizedMode = normalizeConsultationMode(consultationMode);
   const normalizedGender = patientGenderTokenValue(gender);
+  const normalizedConfirmedAt = normalizeAppointmentDateKey(confirmedAt);
   const trimmedMessage = message?.trim() || "";
 
   const parts = [
     normalizedMode ? `[[consultation:${normalizedMode}]]` : null,
     normalizedGender ? `[[gender:${normalizedGender}]]` : null,
+    normalizedConfirmedAt ? `[[confirmed_at:${normalizedConfirmedAt}]]` : null,
     trimmedMessage || null,
   ].filter(Boolean);
 
@@ -122,6 +147,7 @@ const sanitizeLocalAppointments = (value: unknown): AppointmentRecord[] => {
         preferred_time: typeof item.preferred_time === "string" ? item.preferred_time : null,
         message: unpacked.message,
         consultation_mode: normalizeConsultationMode(item.consultation_mode) ?? unpacked.consultation_mode,
+        confirmed_at: normalizeAppointmentDateKey(item.confirmed_at) ?? unpacked.confirmed_at,
         status: typeof item.status === "string" ? item.status : "pending",
         created_at: typeof item.created_at === "string" ? item.created_at : new Date().toISOString(),
         source: "local" as const,
@@ -155,6 +181,7 @@ export const saveLocalAppointment = (draft: AppointmentDraft) => {
     consultation_mode: normalizeConsultationMode(draft.consultation_mode),
     id: createLocalAppointmentId(),
     status: "pending",
+    confirmed_at: null,
     created_at: new Date().toISOString(),
     source: "local",
   };
@@ -171,10 +198,22 @@ export const removeLocalAppointment = (id: string) => {
   return updated;
 };
 
-export const updateLocalAppointmentStatus = (id: string, status: string) => {
+export const updateLocalAppointmentStatus = (id: string, status: string, confirmedAt?: string | null) => {
   const existing = readLocalAppointments();
   const updated = existing.map((appointment) =>
-    appointment.id === id ? { ...appointment, status } : appointment,
+    appointment.id === id
+      ? {
+          ...appointment,
+          status,
+          confirmed_at: normalizeAppointmentDateKey(confirmedAt) ?? appointment.confirmed_at ?? null,
+          message: buildStoredAppointmentMessage(
+            appointment.message,
+            appointment.consultation_mode,
+            appointment.gender,
+            normalizeAppointmentDateKey(confirmedAt) ?? appointment.confirmed_at ?? null,
+          ),
+        }
+      : appointment,
   );
   writeLocalAppointments(updated);
   return updated;
@@ -189,6 +228,7 @@ export const normalizeCloudAppointments = (appointments: Array<Partial<Omit<Appo
       gender: normalizePatientGender(appointment.gender) ?? unpacked.gender,
       message: unpacked.message,
       consultation_mode: normalizeConsultationMode(appointment.consultation_mode) ?? unpacked.consultation_mode,
+      confirmed_at: normalizeAppointmentDateKey(appointment.confirmed_at) ?? unpacked.confirmed_at,
       source: "cloud" as const,
     } as AppointmentRecord;
   });

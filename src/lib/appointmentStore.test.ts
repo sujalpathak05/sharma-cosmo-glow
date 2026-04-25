@@ -3,6 +3,7 @@ import {
   buildStoredAppointmentMessage,
   isLocalAppointmentId,
   mergeAppointments,
+  normalizeAppointmentDateKey,
   normalizeCloudAppointments,
   readLocalAppointments,
   saveLocalAppointment,
@@ -48,11 +49,12 @@ describe("appointment local backup store", () => {
       consultation_mode: "online",
     });
 
-    const updated = updateLocalAppointmentStatus(record.id, "confirmed");
+    const updated = updateLocalAppointmentStatus(record.id, "confirmed", "2026-04-01");
     expect(updated[0]?.status).toBe("confirmed");
+    expect(readLocalAppointments()[0]?.confirmed_at).toBe("2026-04-01");
   });
 
-  it("extracts gender and consultation mode from stored cloud message tokens", () => {
+  it("extracts gender, consultation mode and confirmation date from stored cloud message tokens", () => {
     const normalized = normalizeCloudAppointments([
       {
         id: "cloud-1",
@@ -63,7 +65,7 @@ describe("appointment local backup store", () => {
         location: "Noida",
         preferred_date: null,
         preferred_time: null,
-        message: buildStoredAppointmentMessage("Need call back", "online", "Others"),
+        message: buildStoredAppointmentMessage("Need call back", "online", "Others", "2026-04-01"),
         consultation_mode: null,
         status: "pending",
         created_at: "2026-03-30T09:00:00.000Z",
@@ -72,7 +74,13 @@ describe("appointment local backup store", () => {
 
     expect(normalized[0]?.gender).toBe("Others");
     expect(normalized[0]?.consultation_mode).toBe("online");
+    expect(normalized[0]?.confirmed_at).toBe("2026-04-01");
     expect(normalized[0]?.message).toBe("Need call back");
+  });
+
+  it("normalizes date keys from ISO timestamps", () => {
+    expect(normalizeAppointmentDateKey("2026-04-01T09:00:00.000Z")).toBe("2026-04-01");
+    expect(normalizeAppointmentDateKey("bad date")).toBeNull();
   });
 
   it("merges local records before cloud records and sorts by created_at", () => {
