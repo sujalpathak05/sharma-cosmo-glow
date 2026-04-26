@@ -68,6 +68,7 @@ export type PharmacySaleInvoice = {
   date: string;
   totalAmount: number;
   discount: number;
+  discountPercent: number;
   paymentStatus: "paid" | "due";
   type: "OPD" | "OTC";
   items: PharmacySaleItem[];
@@ -228,21 +229,38 @@ const normalizePharmacySaleItem = (item: Partial<PharmacySaleItem> | null | unde
   price: typeof item?.price === "number" ? item.price : 0,
 });
 
-const normalizePharmacySale = (invoice: Partial<PharmacySaleInvoice> | null | undefined, index: number): PharmacySaleInvoice => ({
-  id: typeof invoice?.id === "string" ? invoice.id : `sale-${index + 1}`,
-  invoiceNo: typeof invoice?.invoiceNo === "string" ? invoice.invoiceNo : `${new Date().getFullYear()}${String(index + 1).padStart(7, "0")}`,
-  patientId: typeof invoice?.patientId === "string" ? invoice.patientId : "PAT0000",
-  patientName: typeof invoice?.patientName === "string" ? invoice.patientName : "Patient",
-  contactNo: typeof invoice?.contactNo === "string" ? invoice.contactNo : "",
-  date: typeof invoice?.date === "string" ? invoice.date : new Date().toISOString().slice(0, 10),
-  totalAmount: typeof invoice?.totalAmount === "number"
-    ? invoice.totalAmount
-    : (Array.isArray(invoice?.items) ? invoice.items.reduce((sum, item) => sum + (item?.qty || 0) * (item?.price || 0), 0) : 0),
-  discount: typeof invoice?.discount === "number" ? invoice.discount : 0,
-  paymentStatus: invoice?.paymentStatus === "due" ? "due" : "paid",
-  type: invoice?.type === "OPD" ? "OPD" : "OTC",
-  items: Array.isArray(invoice?.items) ? invoice.items.map((item) => normalizePharmacySaleItem(item)) : [],
-});
+const clampDiscountPercent = (value: unknown) => {
+  const numericValue = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numericValue)) return 0;
+  return Math.min(100, Math.max(0, numericValue));
+};
+
+const normalizePharmacySale = (invoice: Partial<PharmacySaleInvoice> | null | undefined, index: number): PharmacySaleInvoice => {
+  const items = Array.isArray(invoice?.items) ? invoice.items.map((item) => normalizePharmacySaleItem(item)) : [];
+  const subtotal = items.reduce((sum, item) => sum + item.qty * item.price, 0);
+  const legacyDiscountAmount = typeof invoice?.discount === "number" ? invoice.discount : 0;
+  const discountPercent = typeof invoice?.discountPercent === "number"
+    ? clampDiscountPercent(invoice.discountPercent)
+    : clampDiscountPercent(subtotal > 0 ? (legacyDiscountAmount / subtotal) * 100 : 0);
+  const discount = typeof invoice?.discount === "number"
+    ? invoice.discount
+    : Math.round((subtotal * discountPercent) / 100);
+
+  return {
+    id: typeof invoice?.id === "string" ? invoice.id : `sale-${index + 1}`,
+    invoiceNo: typeof invoice?.invoiceNo === "string" ? invoice.invoiceNo : `${new Date().getFullYear()}${String(index + 1).padStart(7, "0")}`,
+    patientId: typeof invoice?.patientId === "string" ? invoice.patientId : "PAT0000",
+    patientName: typeof invoice?.patientName === "string" ? invoice.patientName : "Patient",
+    contactNo: typeof invoice?.contactNo === "string" ? invoice.contactNo : "",
+    date: typeof invoice?.date === "string" ? invoice.date : new Date().toISOString().slice(0, 10),
+    totalAmount: typeof invoice?.totalAmount === "number" ? invoice.totalAmount : Math.max(0, subtotal - discount),
+    discount,
+    discountPercent,
+    paymentStatus: invoice?.paymentStatus === "due" ? "due" : "paid",
+    type: invoice?.type === "OPD" ? "OPD" : "OTC",
+    items,
+  };
+};
 
 const normalizePharmacyPurchaseItem = (item: Partial<PharmacyPurchaseItem> | null | undefined): PharmacyPurchaseItem => ({
   medicineId: typeof item?.medicineId === "string" ? item.medicineId : "",
@@ -591,7 +609,9 @@ export const deletePharmacyMedicine = async (medicineId: string) =>
     };
   });
 
-export const createPharmacySaleInvoice = async (invoice: Omit<PharmacySaleInvoice, "id" | "invoiceNo" | "totalAmount">) =>
+export const createPharmacySaleInvoice = async (
+  invoice: Omit<PharmacySaleInvoice, "id" | "invoiceNo" | "totalAmount" | "discount">,
+) =>
   mutateClinicAdminData<PharmacySaleInvoice>((data) => {
     const itemsMap = new Map<string, PharmacySaleItem>();
 
@@ -621,11 +641,15 @@ export const createPharmacySaleInvoice = async (invoice: Omit<PharmacySaleInvoic
     });
 
     const subtotal = normalizedItems.reduce((sum, item) => sum + item.qty * item.price, 0);
-    const totalAmount = Math.max(0, subtotal - invoice.discount);
+    const discountPercent = clampDiscountPercent(invoice.discountPercent);
+    const discount = Math.round((subtotal * discountPercent) / 100);
+    const totalAmount = Math.max(0, subtotal - discount);
     const nextInvoice: PharmacySaleInvoice = {
       ...invoice,
       id: createId(),
       invoiceNo: `${new Date().getFullYear()}${String(data.pharmacySales.length + 30001).padStart(7, "0")}`,
+      discount,
+      discountPercent,
       totalAmount,
       items: normalizedItems,
     };
