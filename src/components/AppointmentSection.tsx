@@ -10,7 +10,13 @@ import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, 
 import { patientGenderOptions, type PatientGender } from "@/lib/patientGender";
 
 const locations = [{ value: "Noida", label: "Noida" }];
-const appointmentServiceOptions = [{ label: "Hair Solution" }, { label: "Skin Solution" }];
+const appointmentServiceOptions = [
+  { label: "Hair Solution" },
+  { label: "Skin Solution" },
+  { label: "Psoriasis Treatment" },
+  { label: "Alopecia Treatment" },
+  { label: "Vitiligo Treatment" },
+];
 
 const ALL_TIME_SLOTS = [
   "11:00 AM - 11:15 AM",
@@ -266,7 +272,8 @@ const AppointmentSection = () => {
             </h2>
             <p className="text-body mb-8 max-w-md">
               Book an appointment for acne treatment, PRP hair treatment, laser hair removal,
-              chemical peel treatment, or anti-aging care and get a plan matched to your concern.
+              chemical peel treatment, psoriasis, alopecia, vitiligo, or anti-aging care and get a
+              plan matched to your concern.
             </p>
 
             <div className="space-y-4">
@@ -498,4 +505,3 @@ const AppointmentSection = () => {
 };
 
 export default AppointmentSection;
-

@@ -35,6 +35,9 @@ export const homeKeywordClusters: SeoKeywordCluster[] = [
     keywords: [
       "PRP hair treatment",
       "chemical peel treatment",
+      "psoriasis treatment",
+      "alopecia treatment",
+      "vitiligo treatment",
       "botox clinic",
       "anti-aging treatment",
     ],
@@ -46,6 +49,8 @@ export const homeKeywordClusters: SeoKeywordCluster[] = [
     keywords: [
       "Acne treatment guide",
       "Hair fall causes and solutions",
+      "Psoriasis treatment planning",
+      "Vitiligo treatment options",
       "Laser vs waxing comparison",
       "Anti-aging tips",
     ],
@@ -57,7 +62,7 @@ export const homeSeoBlocks: SeoContentBlock[] = [
     title: "A Noida skin clinic that is easy for Delhi NCR patients to reach",
     paragraphs: [
       "Many people start with searches like skin clinic in Delhi or cosmetic clinic near me because they want expert care close to home, transparent pricing, and a treatment plan that feels trustworthy from the first consultation. Sharma Cosmo Clinic is located in Noida, but the clinic regularly serves patients from across Delhi NCR who prefer a doctor-led setup with clear diagnosis, practical advice, and continuity of care after the first visit.",
-      "That local convenience matters because skin and hair treatment usually works best when follow-up is easy. Acne, pigmentation, hair fall, laser sessions, anti-aging care, and procedure aftercare rarely end in a single visit. Patients comparing options around Delhi often choose a nearby clinic that is accessible, calm, and consistent, especially when they want a single place to manage consultation, treatment planning, and progress review without jumping between multiple providers.",
+      "That local convenience matters because skin and hair treatment usually works best when follow-up is easy. Acne, pigmentation, psoriasis, vitiligo, hair fall, alopecia, laser sessions, anti-aging care, and procedure aftercare rarely end in a single visit. Patients comparing options around Delhi often choose a nearby clinic that is accessible, calm, and consistent, especially when they want a single place to manage consultation, treatment planning, and progress review without jumping between multiple providers.",
     ],
     bullets: [
       "Noida clinic location with easy access for Delhi NCR patients",

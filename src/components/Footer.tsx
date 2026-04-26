@@ -32,7 +32,15 @@ const Footer = () => (
         <div>
           <p className="font-body font-semibold text-primary-foreground text-sm mb-3">Services</p>
           <ul className="space-y-2">
-            {["Skin Treatment", "Hair Fall Treatment", "Laser Treatment", "Anti-Aging"].map((service) => (
+            {[
+              "Skin Treatment",
+              "Hair Fall Treatment",
+              "Psoriasis Treatment",
+              "Alopecia Treatment",
+              "Vitiligo Treatment",
+              "Laser Treatment",
+              "Anti-Aging",
+            ].map((service) => (
               <li key={service}>
                 <a href="#services" className="font-body text-sm hover:text-primary-foreground transition-colors">
                   {service}
