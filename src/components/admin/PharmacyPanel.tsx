@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { CalendarDays, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
@@ -40,7 +40,17 @@ type MedicineFormState = {
 const formatMoney = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 const clampDiscountPercent = (value: number) => Math.min(100, Math.max(0, Number.isFinite(value) ? value : 0));
 const formatPercent = (value: number) => `${Number.isInteger(value) ? value : value.toFixed(2).replace(/\.?0+$/, "")}%`;
-const formatDate = (value: string) => new Date(`${value}T10:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+const pad2 = (value: number) => String(value).padStart(2, "0");
+const toDateKey = (date = new Date()) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+const formatDate = (value: string) => {
+  const date = new Date(`${value}T10:00:00`);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
+const normalizeDateKey = (value: string) => {
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : toDateKey(date);
+};
 const createItemRow = (): ItemRow => ({
   key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   medicineId: "",
@@ -86,6 +96,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
   const [medicineForm, setMedicineForm] = useState<MedicineFormState>(emptyMedicineForm());
   const [saleForm, setSaleForm] = useState({ patientName: "", contactNo: "", type: "OTC" as "OPD" | "OTC", discountPercent: 0, items: [createItemRow()] });
   const [purchaseForm, setPurchaseForm] = useState({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid" as "paid" | "partial" | "due", items: [createItemRow()] });
+  const [selectedSalesDate, setSelectedSalesDate] = useState(toDateKey());
 
   useEffect(() => {
     const syncData = () => setData(readClinicAdminData());
@@ -103,6 +114,28 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
   const totalStock = data.pharmacyMedicines.reduce((sum, item) => sum + item.stock, 0);
   const dueSales = data.pharmacySales.filter((item) => item.paymentStatus === "due").length;
   const linkedPatients = new Set(appointments.map((item) => item.phone)).size;
+  const todayKey = toDateKey();
+  const dailySalesRows = useMemo(() => {
+    const rows = new Map<string, { date: string; invoices: number; amount: number; items: number; dueAmount: number }>();
+
+    data.pharmacySales.forEach((invoice) => {
+      const date = normalizeDateKey(invoice.date);
+      if (!date) return;
+      const current = rows.get(date) ?? { date, invoices: 0, amount: 0, items: 0, dueAmount: 0 };
+      current.invoices += 1;
+      current.amount += invoice.totalAmount;
+      current.items += invoice.items.reduce((sum, item) => sum + item.qty, 0);
+      current.dueAmount += invoice.paymentStatus === "due" ? invoice.totalAmount : 0;
+      rows.set(date, current);
+    });
+
+    return [...rows.values()].sort((left, right) => right.date.localeCompare(left.date));
+  }, [data.pharmacySales]);
+  const totalSalesAmount = data.pharmacySales.reduce((sum, invoice) => sum + invoice.totalAmount, 0);
+  const todaySalesAmount = dailySalesRows.find((row) => row.date === todayKey)?.amount ?? 0;
+  const selectedDateSales = data.pharmacySales.filter((invoice) => normalizeDateKey(invoice.date) === selectedSalesDate);
+  const selectedDateSalesAmount = selectedDateSales.reduce((sum, invoice) => sum + invoice.totalAmount, 0);
+  const selectedDateItemCount = selectedDateSales.reduce((sum, invoice) => sum + invoice.items.reduce((itemSum, item) => itemSum + item.qty, 0), 0);
 
   const salePreviewItems = saleForm.items.map((row) => {
     const medicine = data.pharmacyMedicines.find((item) => item.id === row.medicineId);
@@ -230,7 +263,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
         patientId: createPatientId(saleForm.contactNo),
         patientName: saleForm.patientName.trim(),
         contactNo: saleForm.contactNo.trim(),
-        date: new Date().toISOString().slice(0, 10),
+        date: toDateKey(),
         paymentStatus: saleForm.type === "OPD" ? "due" : "paid",
         type: saleForm.type,
         discountPercent: saleDiscountPercent,
@@ -364,10 +397,11 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
       <section className="overflow-hidden rounded-[30px] border border-[#cdb8ff] bg-[linear-gradient(90deg,rgba(73,81,214,0.96),rgba(158,52,255,0.94))] p-5 text-white shadow-[0_24px_60px_-40px_rgba(66,43,133,0.45)] sm:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div><p className="text-sm uppercase tracking-[0.18em] text-white/80">Pharmacy panel</p><h2 className="mt-2 font-display text-4xl">Pharmacy Dashboard</h2><p className="mt-2 text-sm text-white/80">Masters, stock, sales, purchase and expiry reports aligned to Sharma Cosmo Clinic workflows.</p></div>
-          <div className="grid gap-3 sm:grid-cols-4 xl:w-[640px]">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 xl:w-[840px]">
             <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Purchase</p><p className="mt-2 font-display text-3xl">{data.pharmacyPurchases.length}</p></div>
-            <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Sales</p><p className="mt-2 font-display text-3xl">{data.pharmacySales.length}</p></div>
-            <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Stock Qty</p><p className="mt-2 font-display text-3xl">{totalStock}</p></div>
+            <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Sale Bills</p><p className="mt-2 font-display text-3xl">{data.pharmacySales.length}</p></div>
+            <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Total Sales</p><p className="mt-2 break-words font-display text-2xl">{formatMoney(totalSalesAmount)}</p></div>
+            <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Today Sales</p><p className="mt-2 break-words font-display text-2xl">{formatMoney(todaySalesAmount)}</p></div>
             <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Due Sales</p><p className="mt-2 font-display text-3xl">{dueSales}</p><p className="mt-1 text-xs text-white/70">{linkedPatients} linked patients</p></div>
           </div>
         </div>
@@ -381,6 +415,93 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
 
       {view === "dashboard" ? (
         <div className="grid gap-6 lg:grid-cols-2">
+          <Surface>
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div>
+                <h3 className="font-display text-2xl text-foreground">Sales calendar</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Total sales, today sales and selected date sales in one view.</p>
+              </div>
+              <label className="flex w-full max-w-xs items-center gap-2 rounded-2xl border border-[#d8ccff] bg-white px-4 py-3 text-sm font-medium text-foreground xl:justify-end">
+                <CalendarDays className="h-4 w-4 text-[#5a49d6]" />
+                <input
+                  type="date"
+                  value={selectedSalesDate}
+                  onChange={(event) => setSelectedSalesDate(event.target.value || todayKey)}
+                  className="w-full bg-transparent text-sm outline-none"
+                />
+              </label>
+            </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <div className="rounded-[22px] border border-[#eadfc8] bg-white/80 px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Total Sales</p>
+                <p className="mt-2 font-display text-3xl text-[#5a49d6]">{formatMoney(totalSalesAmount)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{data.pharmacySales.length} invoices</p>
+              </div>
+              <div className="rounded-[22px] border border-[#eadfc8] bg-white/80 px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Today Sales</p>
+                <p className="mt-2 font-display text-3xl text-foreground">{formatMoney(todaySalesAmount)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{formatDate(todayKey)}</p>
+              </div>
+              <div className="rounded-[22px] border border-[#eadfc8] bg-white/80 px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Selected Date</p>
+                <p className="mt-2 font-display text-3xl text-foreground">{formatMoney(selectedDateSalesAmount)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{selectedDateSales.length} bills, {selectedDateItemCount} items</p>
+              </div>
+            </div>
+          </Surface>
+          <Surface>
+            <h3 className="font-display text-2xl text-foreground">Day-by-day sales</h3>
+            <div className="mt-4 space-y-3">
+              {dailySalesRows.length > 0 ? dailySalesRows.slice(0, 10).map((row) => (
+                <button
+                  key={row.date}
+                  type="button"
+                  onClick={() => setSelectedSalesDate(row.date)}
+                  className={cn("flex w-full items-center justify-between gap-4 rounded-[20px] border px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-md", selectedSalesDate === row.date ? "border-[#b9a9ff] bg-[#f5f1ff]" : "border-[#eadfc8] bg-white/80")}
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{formatDate(row.date)}</p>
+                    <p className="text-sm text-muted-foreground">{row.invoices} bills, {row.items} items</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-[#5a49d6]">{formatMoney(row.amount)}</p>
+                    <p className="text-xs text-muted-foreground">Due {formatMoney(row.dueAmount)}</p>
+                  </div>
+                </button>
+              )) : <div className="rounded-[20px] border border-dashed border-[#eadfc8] px-4 py-8 text-sm text-muted-foreground">No sales records yet.</div>}
+            </div>
+          </Surface>
+          <Surface>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="font-display text-2xl text-foreground">{formatDate(selectedSalesDate)} sales</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{selectedDateSales.length} invoices worth {formatMoney(selectedDateSalesAmount)}</p>
+              </div>
+              <button type="button" onClick={() => setView("sales")} className="rounded-full border border-[#d8ccff] bg-white px-4 py-2 text-sm font-medium text-[#5a49d6]">Open Sales</button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {selectedDateSales.length > 0 ? selectedDateSales.map((invoice) => (
+                <button
+                  key={invoice.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedSaleId(invoice.id);
+                    setView("sales");
+                  }}
+                  className="flex w-full items-center justify-between gap-4 rounded-[20px] border border-[#eadfc8] bg-white/80 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div>
+                    <p className="font-medium text-[#5a49d6]">{invoice.invoiceNo}</p>
+                    <p className="text-sm text-muted-foreground">{invoice.patientName} - {invoice.contactNo}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-foreground">{formatMoney(invoice.totalAmount)}</p>
+                    <p className="text-xs capitalize text-muted-foreground">{invoice.paymentStatus}</p>
+                  </div>
+                </button>
+              )) : <div className="rounded-[20px] border border-dashed border-[#eadfc8] px-4 py-8 text-sm text-muted-foreground">No pharmacy sales found for this date.</div>}
+            </div>
+          </Surface>
           <Surface>
             <h3 className="font-display text-2xl text-foreground">Quick modules</h3>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{(["masters", "stock", "sales", "purchase"] as const).map((key) => <button key={key} onClick={() => setView(key)} className="rounded-[24px] border border-[#eadfc8] bg-white/80 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg"><p className="font-semibold text-foreground">{key[0].toUpperCase() + key.slice(1)}</p><p className="mt-2 text-sm text-muted-foreground">Open {key} workflow</p></button>)}</div>
