@@ -102,8 +102,15 @@ export type ClinicAdminData = {
 
 const STORAGE_KEY = "sharma-cosmo-clinic-admin";
 const STORAGE_VERSION_KEY = `${STORAGE_KEY}-version`;
-const CURRENT_STORAGE_VERSION = 2;
+const CURRENT_STORAGE_VERSION = 3;
 export const clinicAdminEventName = "clinic-admin-data-updated";
+
+const REMOVED_PHARMACY_SALE_INVOICE_NOS = new Set([
+  "20260030004",
+  "20260030003",
+  "20260030002",
+  "20260030001",
+]);
 
 const createId = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
@@ -154,6 +161,11 @@ const CLINIC_ADMIN_STATE_ID = "primary";
 const CLINIC_ADMIN_WRITE_RETRIES = 4;
 const canUseStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
+const isRemovedPharmacySaleInvoice = (invoice: unknown) =>
+  isRecord(invoice) && REMOVED_PHARMACY_SALE_INVOICE_NOS.has(String(invoice.invoiceNo ?? ""));
+const filterRemovedPharmacySales = <T>(sales: T[]) => sales.filter((invoice) => !isRemovedPharmacySaleInvoice(invoice));
+const hasRemovedPharmacySales = (value?: Partial<ClinicAdminData> | null) =>
+  Array.isArray(value?.pharmacySales) && value.pharmacySales.some((invoice) => isRemovedPharmacySaleInvoice(invoice));
 
 let clinicAdminCache = seedData;
 let clinicAdminCacheHydrated = false;
@@ -291,7 +303,7 @@ const normalizeClinicAdminData = (value?: Partial<ClinicAdminData> | null): Clin
     ? value.pharmacyMedicines.map((medicine, index) => normalizePharmacyMedicine(medicine, index))
     : seedData.pharmacyMedicines.map((medicine, index) => normalizePharmacyMedicine(medicine, index)),
   pharmacySales: Array.isArray(value?.pharmacySales)
-    ? value.pharmacySales.map((invoice, index) => normalizePharmacySale(invoice, index))
+    ? filterRemovedPharmacySales(value.pharmacySales).map((invoice, index) => normalizePharmacySale(invoice, index))
     : seedData.pharmacySales.map((invoice, index) => normalizePharmacySale(invoice, index)),
   pharmacyPurchases: Array.isArray(value?.pharmacyPurchases)
     ? value.pharmacyPurchases.map((invoice, index) => normalizePharmacyPurchase(invoice, index))
@@ -310,12 +322,19 @@ const readStoredClinicAdminData = () => {
     const parsed = normalizeClinicAdminData(JSON.parse(raw) as Partial<ClinicAdminData>);
     const storedVersion = Number(window.localStorage.getItem(STORAGE_VERSION_KEY) ?? "1");
 
-    if (storedVersion < CURRENT_STORAGE_VERSION) {
+    if (storedVersion < 2) {
       const migratedData = normalizeClinicAdminData({
         ...parsed,
         pharmacySales: [],
         pharmacyPurchases: [],
       });
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedData));
+      window.localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
+      return migratedData;
+    }
+
+    if (storedVersion < CURRENT_STORAGE_VERSION) {
+      const migratedData = normalizeClinicAdminData(parsed);
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedData));
       window.localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
       return migratedData;
@@ -349,6 +368,25 @@ const isSeedClinicAdminData = (data: ClinicAdminData) =>
 
 const payloadToClinicAdminData = (payload: Json | null | undefined) =>
   normalizeClinicAdminData(isRecord(payload) ? payload as Partial<ClinicAdminData> : null);
+
+const removeDeletedPharmacySalesFromCloud = async (row: ClinicAdminStateRow) => {
+  const payload = isRecord(row.payload) ? row.payload as Partial<ClinicAdminData> : null;
+  if (!hasRemovedPharmacySales(payload)) return row;
+
+  const { data, error } = await supabase
+    .from("clinic_admin_state")
+    .update({ payload: normalizeClinicAdminData(payload) as unknown as Json })
+    .eq("id", CLINIC_ADMIN_STATE_ID)
+    .eq("updated_at", row.updated_at)
+    .select("id, payload, updated_at")
+    .maybeSingle();
+
+  if (error || !data) {
+    return row;
+  }
+
+  return data as ClinicAdminStateRow;
+};
 
 const fetchClinicAdminStateRow = async () => {
   const { data, error } = await supabase
@@ -415,7 +453,7 @@ export const readClinicAdminData = () => {
 
 export const loadClinicAdminDataFromCloud = async () => {
   try {
-    const row = await bootstrapCloudClinicAdminState(await fetchClinicAdminStateRow());
+    const row = await removeDeletedPharmacySalesFromCloud(await bootstrapCloudClinicAdminState(await fetchClinicAdminStateRow()));
     return writeClinicAdminCache(payloadToClinicAdminData(row.payload));
   } catch {
     return readClinicAdminData();
