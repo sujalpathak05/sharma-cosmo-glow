@@ -118,8 +118,6 @@ const AppointmentSection = () => {
   const isDateOff = (dateStr: string) => offDates.includes(dateStr);
   const availableSlots = ALL_TIME_SLOTS.filter((slot) => !disabledSlots.includes(slot));
 
-  const today = new Date().toISOString().split("T")[0];
-
   const resetForm = () => {
     setFormData({
       name: "",
@@ -443,7 +441,6 @@ const AppointmentSection = () => {
               <input
                 name="date"
                 type="date"
-                min={today}
                 value={formData.date}
                 onChange={handleChange}
                 className={`w-full px-4 py-3 rounded-xl border bg-background/90 text-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow ${
