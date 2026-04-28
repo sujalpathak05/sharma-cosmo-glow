@@ -94,7 +94,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(readClinicAdminData().pharmacyPurchases[0]?.id ?? null);
   const [editingMedicineId, setEditingMedicineId] = useState<string | null>(null);
   const [medicineForm, setMedicineForm] = useState<MedicineFormState>(emptyMedicineForm());
-  const [saleForm, setSaleForm] = useState({ patientName: "", contactNo: "", type: "OTC" as "OPD" | "OTC", discountPercent: 0, items: [createItemRow()] });
+  const [saleForm, setSaleForm] = useState({ patientName: "", contactNo: "", date: toDateKey(), type: "OTC" as "OPD" | "OTC", discountPercent: 0, items: [createItemRow()] });
   const [purchaseForm, setPurchaseForm] = useState({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid" as "paid" | "partial" | "due", items: [createItemRow()] });
   const [selectedSalesDate, setSelectedSalesDate] = useState(toDateKey());
 
@@ -162,7 +162,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
     setEditingMedicineId(null);
     setMedicineForm(emptyMedicineForm());
   };
-  const resetSaleForm = () => setSaleForm({ patientName: "", contactNo: "", type: "OTC", discountPercent: 0, items: [createItemRow()] });
+  const resetSaleForm = () => setSaleForm({ patientName: "", contactNo: "", date: toDateKey(), type: "OTC", discountPercent: 0, items: [createItemRow()] });
   const resetPurchaseForm = () => setPurchaseForm({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid", items: [createItemRow()] });
 
   const updateRows = (type: "sale" | "purchase", key: string, patch: Partial<ItemRow>) => {
@@ -249,6 +249,10 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
       toast.error("Enter patient details first.");
       return;
     }
+    if (!saleForm.date) {
+      toast.error("Select bill date.");
+      return;
+    }
     if (salePreviewItems.length === 0) {
       toast.error("Add at least one medicine.");
       return;
@@ -263,7 +267,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
         patientId: createPatientId(saleForm.contactNo),
         patientName: saleForm.patientName.trim(),
         contactNo: saleForm.contactNo.trim(),
-        date: toDateKey(),
+        date: saleForm.date,
         paymentStatus: saleForm.type === "OPD" ? "due" : "paid",
         type: saleForm.type,
         discountPercent: saleDiscountPercent,
@@ -570,8 +574,76 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
         <div className="space-y-6">
           <Surface>
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between"><h3 className="font-display text-2xl text-foreground">Sales Invoice</h3><div className="flex flex-col gap-3 sm:flex-row"><SearchField value={search} onChange={setSearch} placeholder="Search patient or invoice" /><button onClick={() => setShowSaleForm((current) => !current)} className="inline-flex items-center gap-2 rounded-full bg-[#5a49d6] px-4 py-2.5 text-sm font-medium text-white"><Plus className="h-4 w-4" />Add New Sales Invoice</button></div></div>
-            {showSaleForm ? <div className="mt-5 space-y-4 rounded-[24px] border border-[#eadfc8] bg-white/80 p-5"><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><label className="text-sm font-medium text-foreground">Patient name<input value={saleForm.patientName} onChange={(event) => setSaleForm((current) => ({ ...current, patientName: event.target.value }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" /></label><label className="text-sm font-medium text-foreground">Contact no<input value={saleForm.contactNo} onChange={(event) => setSaleForm((current) => ({ ...current, contactNo: event.target.value }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" /></label><label className="text-sm font-medium text-foreground">Type<select value={saleForm.type} onChange={(event) => setSaleForm((current) => ({ ...current, type: event.target.value as "OPD" | "OTC" }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none"><option value="OTC">OTC</option><option value="OPD">OPD</option></select></label><label className="text-sm font-medium text-foreground">Discount (%)<input type="number" min="0" max="100" step="0.01" value={saleForm.discountPercent} onChange={(event) => setSaleForm((current) => ({ ...current, discountPercent: clampDiscountPercent(Number(event.target.value) || 0) }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" /></label></div>{renderItemEditor("sale", saleForm.items)}<div className="flex flex-col gap-4 rounded-[20px] bg-[#f5f1ff] px-4 py-4 md:flex-row md:items-center md:justify-between"><div><p className="text-sm font-medium text-foreground">Invoice summary</p><p className="mt-1 text-sm text-muted-foreground">{salePreviewItems.length} medicines selected</p></div><div className="text-left md:text-right"><p className="text-sm text-muted-foreground">Subtotal: {formatMoney(saleSubtotal)}</p><p className="text-sm text-muted-foreground">Discount ({formatPercent(saleDiscountPercent)}): {formatMoney(saleDiscountAmount)}</p><p className="text-sm text-muted-foreground">Estimated total</p><p className="font-display text-3xl text-[#5a49d6]">{formatMoney(saleDraftTotal)}</p></div></div><div className="flex gap-3"><button onClick={createSale} className="rounded-full bg-[#5a49d6] px-5 py-2.5 text-sm font-medium text-white">Generate Pharmacy Bill</button><button onClick={() => { setShowSaleForm(false); resetSaleForm(); }} className="rounded-full border border-[#d8ccff] bg-white px-5 py-2.5 text-sm font-medium text-[#5a49d6]">Cancel</button></div></div> : null}
-            <div className="mt-5 overflow-hidden rounded-[24px] border border-[#eadfc8] bg-white/70"><div className="grid grid-cols-[1fr,0.6fr,0.8fr,1fr,0.8fr,0.9fr,0.6fr] gap-4 border-b border-[#eadfc8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"><span>Invoice Id</span><span>Type</span><span>Patient Id</span><span>Patient Name</span><span>Contact</span><span>Total</span><span>Action</span></div>{filteredSales.length > 0 ? filteredSales.map((invoice) => <div key={invoice.id} className="grid grid-cols-[1fr,0.6fr,0.8fr,1fr,0.8fr,0.9fr,0.6fr] gap-4 border-b border-[#f3ead8] px-4 py-4 text-sm last:border-b-0"><span className="font-medium text-[#5a49d6]">{invoice.invoiceNo}</span><span>{invoice.type}</span><span>{invoice.patientId}</span><span>{invoice.patientName}</span><span>{invoice.contactNo}</span><span>{formatMoney(invoice.totalAmount)}</span><button onClick={() => setSelectedSaleId(invoice.id)} className="rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6]">View</button></div>) : <div className="px-4 py-8 text-sm text-muted-foreground">No sales records yet. Start by creating the first pharmacy bill.</div>}</div>
+            {showSaleForm ? (
+              <div className="mt-5 space-y-4 rounded-[24px] border border-[#eadfc8] bg-white/80 p-5">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                  <label className="text-sm font-medium text-foreground">
+                    Patient name
+                    <input value={saleForm.patientName} onChange={(event) => setSaleForm((current) => ({ ...current, patientName: event.target.value }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" />
+                  </label>
+                  <label className="text-sm font-medium text-foreground">
+                    Contact no
+                    <input value={saleForm.contactNo} onChange={(event) => setSaleForm((current) => ({ ...current, contactNo: event.target.value }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" />
+                  </label>
+                  <label className="text-sm font-medium text-foreground">
+                    Bill Date
+                    <input type="date" value={saleForm.date} onChange={(event) => setSaleForm((current) => ({ ...current, date: event.target.value }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" />
+                  </label>
+                  <label className="text-sm font-medium text-foreground">
+                    Type
+                    <select value={saleForm.type} onChange={(event) => setSaleForm((current) => ({ ...current, type: event.target.value as "OPD" | "OTC" }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none">
+                      <option value="OTC">OTC</option>
+                      <option value="OPD">OPD</option>
+                    </select>
+                  </label>
+                  <label className="text-sm font-medium text-foreground">
+                    Discount (%)
+                    <input type="number" min="0" max="100" step="0.01" value={saleForm.discountPercent} onChange={(event) => setSaleForm((current) => ({ ...current, discountPercent: clampDiscountPercent(Number(event.target.value) || 0) }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" />
+                  </label>
+                </div>
+                {renderItemEditor("sale", saleForm.items)}
+                <div className="flex flex-col gap-4 rounded-[20px] bg-[#f5f1ff] px-4 py-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Invoice summary</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{salePreviewItems.length} medicines selected for {formatDate(saleForm.date)}</p>
+                  </div>
+                  <div className="text-left md:text-right">
+                    <p className="text-sm text-muted-foreground">Subtotal: {formatMoney(saleSubtotal)}</p>
+                    <p className="text-sm text-muted-foreground">Discount ({formatPercent(saleDiscountPercent)}): {formatMoney(saleDiscountAmount)}</p>
+                    <p className="text-sm text-muted-foreground">Estimated total</p>
+                    <p className="font-display text-3xl text-[#5a49d6]">{formatMoney(saleDraftTotal)}</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={createSale} className="rounded-full bg-[#5a49d6] px-5 py-2.5 text-sm font-medium text-white">Generate Pharmacy Bill</button>
+                  <button onClick={() => { setShowSaleForm(false); resetSaleForm(); }} className="rounded-full border border-[#d8ccff] bg-white px-5 py-2.5 text-sm font-medium text-[#5a49d6]">Cancel</button>
+                </div>
+              </div>
+            ) : null}
+            <div className="mt-5 overflow-hidden rounded-[24px] border border-[#eadfc8] bg-white/70">
+              <div className="grid grid-cols-[1fr,0.75fr,0.55fr,0.8fr,1fr,0.8fr,0.9fr,0.6fr] gap-4 border-b border-[#eadfc8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <span>Invoice Id</span>
+                <span>Date</span>
+                <span>Type</span>
+                <span>Patient Id</span>
+                <span>Patient Name</span>
+                <span>Contact</span>
+                <span>Total</span>
+                <span>Action</span>
+              </div>
+              {filteredSales.length > 0 ? filteredSales.map((invoice) => (
+                <div key={invoice.id} className="grid grid-cols-[1fr,0.75fr,0.55fr,0.8fr,1fr,0.8fr,0.9fr,0.6fr] gap-4 border-b border-[#f3ead8] px-4 py-4 text-sm last:border-b-0">
+                  <span className="font-medium text-[#5a49d6]">{invoice.invoiceNo}</span>
+                  <span>{formatDate(invoice.date)}</span>
+                  <span>{invoice.type}</span>
+                  <span>{invoice.patientId}</span>
+                  <span>{invoice.patientName}</span>
+                  <span>{invoice.contactNo}</span>
+                  <span>{formatMoney(invoice.totalAmount)}</span>
+                  <button onClick={() => setSelectedSaleId(invoice.id)} className="rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6]">View</button>
+                </div>
+              )) : <div className="px-4 py-8 text-sm text-muted-foreground">No sales records yet. Start by creating the first pharmacy bill.</div>}
+            </div>
           </Surface>
 
           {selectedSale ? <ClinicInvoicePreview badge="Pharmacy Invoice Preview" title="Sales Bill" invoiceNo={selectedSale.invoiceNo} invoiceDate={formatDate(selectedSale.date)} status={selectedSale.paymentStatus} patientRows={[{ label: "Patient Name", value: selectedSale.patientName }, { label: "Patient ID", value: selectedSale.patientId }, { label: "Phone", value: selectedSale.contactNo }, { label: "Sale Type", value: selectedSale.type }]} billingRows={[{ label: "Clinic", value: clinicBrand.name }, { label: "Department", value: "Pharmacy / Sales Desk" }, { label: "Address", value: clinicBrand.address }, { label: "Doctor", value: clinicBrand.doctorName }]} items={selectedSale.items.map((item) => ({ id: `${selectedSale.id}-${item.medicineId}`, label: item.name, meta: "Medicine / pharmacy dispensed item", qty: item.qty, rate: formatMoney(item.price), total: formatMoney(item.qty * item.price) }))} summaryRows={[{ label: "Subtotal", value: formatMoney(selectedSale.items.reduce((sum, item) => sum + item.qty * item.price, 0)) }, { label: `Discount (${formatPercent(selectedSale.discountPercent)})`, value: formatMoney(selectedSale.discount) }, { label: selectedSale.paymentStatus === "due" ? "Outstanding" : "Paid Amount", value: formatMoney(selectedSale.totalAmount), tone: selectedSale.paymentStatus === "due" ? "warning" : "success" }, { label: "Grand Total", value: formatMoney(selectedSale.totalAmount) }]} note="This pharmacy bill is issued by Sharma Cosmo Clinic. Medicines once dispensed should be checked immediately at the counter." onPrint={() => window.print()} /> : null}
