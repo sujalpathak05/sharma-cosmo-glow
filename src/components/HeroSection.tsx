@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
+import HairTestCtaButton from "@/components/HairTestCtaButton";
 import heroImage from "@/assets/hero-clinic.jpg";
 
 const heroHighlights = [
@@ -27,7 +28,11 @@ const stats = [
   { num: "15+", label: "Treatments" },
 ];
 
-const HeroSection = () => {
+type HeroSectionProps = {
+  onHairTestOpen: () => void;
+};
+
+const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -44,7 +49,6 @@ const HeroSection = () => {
           style={{ transitionDuration: "1500ms" }}
           loading="eager"
           decoding="async"
-          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/88 via-foreground/62 to-foreground/28" />
         <div className="absolute inset-0 motion-grid mix-blend-soft-light" />
@@ -185,6 +189,21 @@ const HeroSection = () => {
                   <span>Our Services</span>
                   <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
                 </a>
+              </div>
+
+              <div
+                className={`mt-7 rounded-[1.4rem] border border-[#efd49f] bg-[linear-gradient(135deg,rgba(255,251,244,0.96),rgba(245,224,184,0.92))] p-5 shadow-[0_26px_60px_-38px_rgba(0,0,0,0.8)] transition-all duration-1000 ease-out sm:p-6 ${
+                  loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                }`}
+                style={{ transitionDelay: "1.08s" }}
+              >
+                <h2 className="font-display text-2xl leading-tight text-charcoal sm:text-3xl">
+                  Know the root cause of your hair problems
+                </h2>
+                <p className="mt-3 max-w-xl font-body text-sm leading-relaxed text-charcoal/75 sm:text-base">
+                  Take our quick hair test and get expert guidance from Sharma Cosmo Clinic.
+                </p>
+                <HairTestCtaButton onClick={onHairTestOpen} className="mt-5 w-full sm:w-auto" />
               </div>
             </div>
 

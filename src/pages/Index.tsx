@@ -1,6 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
+import HairTestModal from "@/components/HairTestModal";
 import { Helmet } from "react-helmet-async";
 import { clinicContact } from "@/lib/contactDetails";
 
@@ -60,6 +61,9 @@ const jsonLd = {
 };
 
 const Index = () => {
+  const [hairTestOpen, setHairTestOpen] = useState(false);
+  const openHairTest = () => setHairTestOpen(true);
+
   return (
     <>
       <Helmet>
@@ -81,9 +85,9 @@ const Index = () => {
         <meta name="twitter:description" content="Doctor-led skin, hair, laser, PRP, chemical peel, psoriasis, alopecia, vitiligo, botox, and anti-aging care in Noida for patients across Delhi NCR." />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
-      <Navbar />
+      <Navbar onHairTestOpen={openHairTest} />
       <main>
-        <HeroSection />
+        <HeroSection onHairTestOpen={openHairTest} />
         <Suspense fallback={<div className="min-h-[40vh]" />}>
           <AboutSection />
           <ServicesSection />
@@ -98,6 +102,7 @@ const Index = () => {
         <Footer />
         <FloatingButtons />
       </Suspense>
+      <HairTestModal open={hairTestOpen} onOpenChange={setHairTestOpen} />
     </>
   );
 };

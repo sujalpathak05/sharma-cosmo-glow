@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Menu, X, Phone } from "lucide-react";
+import HairTestCtaButton from "@/components/HairTestCtaButton";
 import { clinicContact } from "@/lib/contactDetails";
 
 const navLinks = [
@@ -12,7 +13,11 @@ const navLinks = [
   { label: "Contact", href: "#contact" },
 ];
 
-const Navbar = () => {
+type NavbarProps = {
+  onHairTestOpen: () => void;
+};
+
+const Navbar = ({ onHairTestOpen }: NavbarProps) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -38,7 +43,7 @@ const Navbar = () => {
         </a>
 
         {/* Desktop nav */}
-        <ul className="hidden xl:flex items-center gap-6">
+        <ul className="hidden xl:flex items-center gap-4">
           {navLinks.map((link, i) => (
             <li
               key={link.href}
@@ -55,11 +60,12 @@ const Navbar = () => {
           ))}
         </ul>
 
-        <div className="hidden xl:flex items-center gap-4">
-          <a href={`tel:${clinicContact.phoneHref}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <div className="hidden xl:flex items-center gap-3">
+          <a href={`tel:${clinicContact.phoneHref}`} className="hidden 2xl:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <Phone size={16} />
             {clinicContact.phoneDisplay}
           </a>
+          <HairTestCtaButton onClick={onHairTestOpen} compact />
           <a href="#appointment" className="btn-primary text-sm !px-6 !py-2.5">
             Book Appointment
           </a>
@@ -79,7 +85,7 @@ const Navbar = () => {
       </nav>
 
       {/* Mobile menu */}
-      <div className={`xl:hidden overflow-hidden transition-all duration-500 ease-out ${mobileOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"}`}>
+      <div className={`xl:hidden overflow-hidden transition-all duration-500 ease-out ${mobileOpen ? "max-h-[560px] opacity-100" : "max-h-0 opacity-0"}`}>
         <div className="bg-card/98 backdrop-blur-lg border-t border-border section-padding py-6 flex flex-col gap-4">
           {navLinks.map((link, i) => (
             <a
@@ -92,6 +98,13 @@ const Navbar = () => {
               {link.label}
             </a>
           ))}
+          <HairTestCtaButton
+            onClick={() => {
+              setMobileOpen(false);
+              onHairTestOpen();
+            }}
+            className="mt-2 w-full"
+          />
           <a href="#appointment" onClick={() => setMobileOpen(false)} className="btn-primary text-center mt-2">
             Book Appointment
           </a>
