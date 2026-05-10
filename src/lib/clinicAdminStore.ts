@@ -155,7 +155,15 @@ const seedData: ClinicAdminData = {
 };
 
 type ClinicAdminStateRow = Tables<"clinic_admin_state">;
+type OpdBillRow = Tables<"opd_bills">;
+type OpdBillItemRow = Tables<"opd_bill_items">;
+type PharmacyMedicineRow = Tables<"pharmacy_medicines">;
+type PharmacySaleRow = Tables<"pharmacy_sales">;
+type PharmacySaleItemRow = Tables<"pharmacy_sale_items">;
+type PharmacyPurchaseRow = Tables<"pharmacy_purchases">;
+type PharmacyPurchaseItemRow = Tables<"pharmacy_purchase_items">;
 type ClinicAdminMutationPlan<T> = { result: T; nextData: ClinicAdminData } | { result: T; skip: true };
+type ClinicAdminPersistScope = "all" | "opd" | "pharmacy";
 
 const CLINIC_ADMIN_STATE_ID = "primary";
 const CLINIC_ADMIN_WRITE_RETRIES = 4;
@@ -171,6 +179,7 @@ let clinicAdminCache = seedData;
 let clinicAdminCacheHydrated = false;
 let clinicAdminChannel: RealtimeChannel | null = null;
 let clinicAdminSubscriberCount = 0;
+let clinicAdminUsesNormalizedTables = false;
 
 const normalizeOpdBillItem = (item: Partial<OpdBillItem> | null | undefined): OpdBillItem => ({
   label: typeof item?.label === "string" && item.label.trim() ? item.label : "Consultation",
@@ -442,6 +451,347 @@ const bootstrapCloudClinicAdminState = async (row: ClinicAdminStateRow) => {
   return data as ClinicAdminStateRow;
 };
 
+const toNumber = (value: unknown) => {
+  const numericValue = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+};
+
+const tableRowsToClinicAdminData = ({
+  opdBills,
+  opdBillItems,
+  pharmacyMedicines,
+  pharmacySales,
+  pharmacySaleItems,
+  pharmacyPurchases,
+  pharmacyPurchaseItems,
+}: {
+  opdBills: OpdBillRow[];
+  opdBillItems: OpdBillItemRow[];
+  pharmacyMedicines: PharmacyMedicineRow[];
+  pharmacySales: PharmacySaleRow[];
+  pharmacySaleItems: PharmacySaleItemRow[];
+  pharmacyPurchases: PharmacyPurchaseRow[];
+  pharmacyPurchaseItems: PharmacyPurchaseItemRow[];
+}) => {
+  const billItemsByBillId = opdBillItems.reduce<Record<string, OpdBillItem[]>>((map, item) => {
+    map[item.bill_id] = map[item.bill_id] ?? [];
+    map[item.bill_id].push({
+      label: item.label,
+      qty: toNumber(item.qty),
+      rate: toNumber(item.rate),
+      discount: toNumber(item.discount),
+      gst: toNumber(item.gst),
+      total: toNumber(item.total),
+    });
+    return map;
+  }, {});
+
+  const saleItemsBySaleId = pharmacySaleItems.reduce<Record<string, PharmacySaleItem[]>>((map, item) => {
+    map[item.sale_id] = map[item.sale_id] ?? [];
+    map[item.sale_id].push({
+      medicineId: item.medicine_id ?? "",
+      name: item.name,
+      qty: Math.max(1, Math.round(toNumber(item.qty))),
+      price: toNumber(item.price),
+    });
+    return map;
+  }, {});
+
+  const purchaseItemsByPurchaseId = pharmacyPurchaseItems.reduce<Record<string, PharmacyPurchaseItem[]>>((map, item) => {
+    map[item.purchase_id] = map[item.purchase_id] ?? [];
+    map[item.purchase_id].push({
+      medicineId: item.medicine_id ?? "",
+      name: item.name,
+      qty: Math.max(1, Math.round(toNumber(item.qty))),
+      price: toNumber(item.price),
+    });
+    return map;
+  }, {});
+
+  return normalizeClinicAdminData({
+    opdBills: opdBills.map((bill, index) => normalizeOpdBill({
+      id: bill.id,
+      billNo: bill.bill_no,
+      appointmentId: bill.appointment_id ?? undefined,
+      patientId: bill.patient_id,
+      patientName: bill.patient_name,
+      phone: bill.phone,
+      age: bill.age,
+      gender: bill.gender,
+      doctorName: bill.doctor_name,
+      doctorSpeciality: bill.doctor_speciality,
+      clinicName: bill.clinic_name,
+      clinicAddress: bill.clinic_address,
+      date: bill.bill_date,
+      status: bill.status as OpdBill["status"],
+      paidAmount: toNumber(bill.paid_amount),
+      totalAmount: toNumber(bill.total_amount),
+      paymentMode: normalizePaymentMode(bill.payment_mode),
+      consultationMode: normalizeConsultationMode(bill.consultation_mode),
+      visitType: bill.visit_type,
+      items: billItemsByBillId[bill.id] ?? [],
+    }, index)),
+    pharmacyMedicines: pharmacyMedicines.map((medicine, index) => normalizePharmacyMedicine({
+      id: medicine.id,
+      name: medicine.name,
+      generic: medicine.generic,
+      group: medicine.group_name,
+      manufacturer: medicine.manufacturer,
+      batch: medicine.batch,
+      expiryDate: medicine.expiry_date,
+      stock: medicine.stock,
+      location: medicine.location,
+      unitPrice: toNumber(medicine.unit_price),
+    }, index)),
+    pharmacySales: pharmacySales.map((invoice, index) => normalizePharmacySale({
+      id: invoice.id,
+      invoiceNo: invoice.invoice_no,
+      patientId: invoice.patient_id,
+      patientName: invoice.patient_name,
+      contactNo: invoice.contact_no,
+      date: invoice.sale_date,
+      totalAmount: toNumber(invoice.total_amount),
+      discount: toNumber(invoice.discount),
+      discountPercent: toNumber(invoice.discount_percent),
+      paymentStatus: invoice.payment_status as PharmacySaleInvoice["paymentStatus"],
+      type: invoice.sale_type as PharmacySaleInvoice["type"],
+      items: saleItemsBySaleId[invoice.id] ?? [],
+    }, index)),
+    pharmacyPurchases: pharmacyPurchases.map((invoice, index) => normalizePharmacyPurchase({
+      id: invoice.id,
+      invoiceNo: invoice.invoice_no,
+      supplierId: invoice.supplier_id,
+      supplierName: invoice.supplier_name,
+      contactNo: invoice.contact_no,
+      date: invoice.purchase_date,
+      amount: toNumber(invoice.amount),
+      paymentStatus: invoice.payment_status as PharmacyPurchaseInvoice["paymentStatus"],
+      items: purchaseItemsByPurchaseId[invoice.id] ?? [],
+    }, index)),
+  });
+};
+
+const loadNormalizedClinicAdminData = async () => {
+  const [
+    opdBills,
+    opdBillItems,
+    pharmacyMedicines,
+    pharmacySales,
+    pharmacySaleItems,
+    pharmacyPurchases,
+    pharmacyPurchaseItems,
+  ] = await Promise.all([
+    supabase.from("opd_bills").select("*").order("bill_date", { ascending: false }),
+    supabase.from("opd_bill_items").select("*").order("position", { ascending: true }),
+    supabase.from("pharmacy_medicines").select("*").order("name", { ascending: true }),
+    supabase.from("pharmacy_sales").select("*").order("sale_date", { ascending: false }),
+    supabase.from("pharmacy_sale_items").select("*").order("position", { ascending: true }),
+    supabase.from("pharmacy_purchases").select("*").order("purchase_date", { ascending: false }),
+    supabase.from("pharmacy_purchase_items").select("*").order("position", { ascending: true }),
+  ]);
+
+  const error = opdBills.error || opdBillItems.error || pharmacyMedicines.error || pharmacySales.error || pharmacySaleItems.error || pharmacyPurchases.error || pharmacyPurchaseItems.error;
+  if (error) throw error;
+
+  clinicAdminUsesNormalizedTables = true;
+  return tableRowsToClinicAdminData({
+    opdBills: (opdBills.data ?? []) as OpdBillRow[],
+    opdBillItems: (opdBillItems.data ?? []) as OpdBillItemRow[],
+    pharmacyMedicines: (pharmacyMedicines.data ?? []) as PharmacyMedicineRow[],
+    pharmacySales: (pharmacySales.data ?? []) as PharmacySaleRow[],
+    pharmacySaleItems: (pharmacySaleItems.data ?? []) as PharmacySaleItemRow[],
+    pharmacyPurchases: (pharmacyPurchases.data ?? []) as PharmacyPurchaseRow[],
+    pharmacyPurchaseItems: (pharmacyPurchaseItems.data ?? []) as PharmacyPurchaseItemRow[],
+  });
+};
+
+const throwIfError = (error: unknown) => {
+  if (error) throw error;
+};
+
+const deleteMissingOpdBills = async (keepIds: Set<string>) => {
+  const { data, error } = await supabase.from("opd_bills").select("id");
+  throwIfError(error);
+  for (const row of data ?? []) {
+    if (!keepIds.has(row.id)) {
+      const { error: deleteError } = await supabase.from("opd_bills").delete().eq("id", row.id);
+      throwIfError(deleteError);
+    }
+  }
+};
+
+const deleteMissingMedicines = async (keepIds: Set<string>) => {
+  const { data, error } = await supabase.from("pharmacy_medicines").select("id");
+  throwIfError(error);
+  for (const row of data ?? []) {
+    if (!keepIds.has(row.id)) {
+      const { error: deleteError } = await supabase.from("pharmacy_medicines").delete().eq("id", row.id);
+      throwIfError(deleteError);
+    }
+  }
+};
+
+const deleteMissingSales = async (keepIds: Set<string>) => {
+  const { data, error } = await supabase.from("pharmacy_sales").select("id");
+  throwIfError(error);
+  for (const row of data ?? []) {
+    if (!keepIds.has(row.id)) {
+      const { error: deleteError } = await supabase.from("pharmacy_sales").delete().eq("id", row.id);
+      throwIfError(deleteError);
+    }
+  }
+};
+
+const deleteMissingPurchases = async (keepIds: Set<string>) => {
+  const { data, error } = await supabase.from("pharmacy_purchases").select("id");
+  throwIfError(error);
+  for (const row of data ?? []) {
+    if (!keepIds.has(row.id)) {
+      const { error: deleteError } = await supabase.from("pharmacy_purchases").delete().eq("id", row.id);
+      throwIfError(deleteError);
+    }
+  }
+};
+
+const persistNormalizedClinicAdminData = async (data: ClinicAdminData, scope: ClinicAdminPersistScope = "all") => {
+  const normalized = normalizeClinicAdminData(data);
+
+  if (scope === "all" || scope === "opd") {
+    const billRows = normalized.opdBills.map((bill) => ({
+      id: bill.id,
+      bill_no: bill.billNo,
+      appointment_id: bill.appointmentId ?? null,
+      patient_id: bill.patientId,
+      patient_name: bill.patientName,
+      phone: bill.phone,
+      age: bill.age,
+      gender: bill.gender,
+      doctor_name: bill.doctorName,
+      doctor_speciality: bill.doctorSpeciality,
+      clinic_name: bill.clinicName,
+      clinic_address: bill.clinicAddress,
+      bill_date: bill.date,
+      status: bill.status,
+      paid_amount: bill.paidAmount,
+      total_amount: bill.totalAmount,
+      payment_mode: bill.paymentMode,
+      consultation_mode: bill.consultationMode,
+      visit_type: bill.visitType,
+    }));
+
+    if (billRows.length > 0) {
+      const { error } = await supabase.from("opd_bills").upsert(billRows);
+      throwIfError(error);
+      const { error: itemDeleteError } = await supabase.from("opd_bill_items").delete().in("bill_id", billRows.map((bill) => bill.id));
+      throwIfError(itemDeleteError);
+      const itemRows = normalized.opdBills.flatMap((bill) => bill.items.map((item, position) => ({
+        bill_id: bill.id,
+        position,
+        label: item.label,
+        qty: item.qty,
+        rate: item.rate,
+        discount: item.discount,
+        gst: item.gst,
+        total: item.total,
+      })));
+      if (itemRows.length > 0) {
+        const { error: itemInsertError } = await supabase.from("opd_bill_items").insert(itemRows);
+        throwIfError(itemInsertError);
+      }
+    }
+    await deleteMissingOpdBills(new Set(normalized.opdBills.map((bill) => bill.id)));
+  }
+
+  if (scope === "all" || scope === "pharmacy") {
+    const medicineRows = normalized.pharmacyMedicines.map((medicine) => ({
+      id: medicine.id,
+      name: medicine.name,
+      generic: medicine.generic,
+      group_name: medicine.group,
+      manufacturer: medicine.manufacturer,
+      batch: medicine.batch,
+      expiry_date: medicine.expiryDate,
+      stock: medicine.stock,
+      location: medicine.location,
+      unit_price: medicine.unitPrice,
+    }));
+
+    if (medicineRows.length > 0) {
+      const { error } = await supabase.from("pharmacy_medicines").upsert(medicineRows);
+      throwIfError(error);
+    }
+    await deleteMissingMedicines(new Set(normalized.pharmacyMedicines.map((medicine) => medicine.id)));
+
+    const saleRows = normalized.pharmacySales.map((invoice) => ({
+      id: invoice.id,
+      invoice_no: invoice.invoiceNo,
+      patient_id: invoice.patientId,
+      patient_name: invoice.patientName,
+      contact_no: invoice.contactNo,
+      sale_date: invoice.date,
+      total_amount: invoice.totalAmount,
+      discount: invoice.discount,
+      discount_percent: invoice.discountPercent,
+      payment_status: invoice.paymentStatus,
+      sale_type: invoice.type,
+    }));
+
+    if (saleRows.length > 0) {
+      const { error } = await supabase.from("pharmacy_sales").upsert(saleRows);
+      throwIfError(error);
+      const { error: itemDeleteError } = await supabase.from("pharmacy_sale_items").delete().in("sale_id", saleRows.map((invoice) => invoice.id));
+      throwIfError(itemDeleteError);
+      const itemRows = normalized.pharmacySales.flatMap((invoice) => invoice.items.map((item, position) => ({
+        sale_id: invoice.id,
+        position,
+        medicine_id: item.medicineId || null,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+      })));
+      if (itemRows.length > 0) {
+        const { error: itemInsertError } = await supabase.from("pharmacy_sale_items").insert(itemRows);
+        throwIfError(itemInsertError);
+      }
+    }
+    await deleteMissingSales(new Set(normalized.pharmacySales.map((invoice) => invoice.id)));
+
+    const purchaseRows = normalized.pharmacyPurchases.map((invoice) => ({
+      id: invoice.id,
+      invoice_no: invoice.invoiceNo,
+      supplier_id: invoice.supplierId,
+      supplier_name: invoice.supplierName,
+      contact_no: invoice.contactNo,
+      purchase_date: invoice.date,
+      amount: invoice.amount,
+      payment_status: invoice.paymentStatus,
+    }));
+
+    if (purchaseRows.length > 0) {
+      const { error } = await supabase.from("pharmacy_purchases").upsert(purchaseRows);
+      throwIfError(error);
+      const { error: itemDeleteError } = await supabase.from("pharmacy_purchase_items").delete().in("purchase_id", purchaseRows.map((invoice) => invoice.id));
+      throwIfError(itemDeleteError);
+      const itemRows = normalized.pharmacyPurchases.flatMap((invoice) => invoice.items.map((item, position) => ({
+        purchase_id: invoice.id,
+        position,
+        medicine_id: item.medicineId || null,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+      })));
+      if (itemRows.length > 0) {
+        const { error: itemInsertError } = await supabase.from("pharmacy_purchase_items").insert(itemRows);
+        throwIfError(itemInsertError);
+      }
+    }
+    await deleteMissingPurchases(new Set(normalized.pharmacyPurchases.map((invoice) => invoice.id)));
+  }
+
+  clinicAdminUsesNormalizedTables = true;
+  return writeClinicAdminCache(normalized);
+};
+
 export const readClinicAdminData = () => {
   if (!clinicAdminCacheHydrated) {
     clinicAdminCache = readStoredClinicAdminData();
@@ -452,6 +802,12 @@ export const readClinicAdminData = () => {
 };
 
 export const loadClinicAdminDataFromCloud = async () => {
+  try {
+    return writeClinicAdminCache(await loadNormalizedClinicAdminData());
+  } catch {
+    clinicAdminUsesNormalizedTables = false;
+  }
+
   try {
     const row = await removeDeletedPharmacySalesFromCloud(await bootstrapCloudClinicAdminState(await fetchClinicAdminStateRow()));
     return writeClinicAdminCache(payloadToClinicAdminData(row.payload));
@@ -470,7 +826,7 @@ export const subscribeClinicAdminData = (listener: () => void) => {
   if (clinicAdminSubscriberCount === 1) {
     void loadClinicAdminDataFromCloud();
     clinicAdminChannel = supabase
-      .channel("clinic-admin-state")
+      .channel("clinic-admin-data")
       .on(
         "postgres_changes",
         {
@@ -483,6 +839,27 @@ export const subscribeClinicAdminData = (listener: () => void) => {
           void loadClinicAdminDataFromCloud();
         },
       )
+      .on("postgres_changes", { event: "*", schema: "public", table: "opd_bills" }, () => {
+        void loadClinicAdminDataFromCloud();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "opd_bill_items" }, () => {
+        void loadClinicAdminDataFromCloud();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pharmacy_medicines" }, () => {
+        void loadClinicAdminDataFromCloud();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pharmacy_sales" }, () => {
+        void loadClinicAdminDataFromCloud();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pharmacy_sale_items" }, () => {
+        void loadClinicAdminDataFromCloud();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pharmacy_purchases" }, () => {
+        void loadClinicAdminDataFromCloud();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pharmacy_purchase_items" }, () => {
+        void loadClinicAdminDataFromCloud();
+      })
       .subscribe();
   }
 
@@ -500,7 +877,7 @@ export const subscribeClinicAdminData = (listener: () => void) => {
   };
 };
 
-const mutateClinicAdminData = async <T>(mutator: (current: ClinicAdminData) => ClinicAdminMutationPlan<T>) => {
+const mutateClinicAdminStateData = async <T>(mutator: (current: ClinicAdminData) => ClinicAdminMutationPlan<T>) => {
   for (let attempt = 0; attempt < CLINIC_ADMIN_WRITE_RETRIES; attempt += 1) {
     const row = await fetchClinicAdminStateRow();
     const current = payloadToClinicAdminData(row.payload);
@@ -532,6 +909,37 @@ const mutateClinicAdminData = async <T>(mutator: (current: ClinicAdminData) => C
   throw new Error("Clinic data changed in another tab. Please try again.");
 };
 
+const mutateClinicAdminData = async <T>(
+  mutator: (current: ClinicAdminData) => ClinicAdminMutationPlan<T>,
+  scope: ClinicAdminPersistScope = "all",
+) => {
+  let current: ClinicAdminData;
+
+  try {
+    current = await loadNormalizedClinicAdminData();
+  } catch {
+    clinicAdminUsesNormalizedTables = false;
+    return mutateClinicAdminStateData(mutator);
+  }
+
+  const plan = mutator(current);
+
+  if ("skip" in plan) {
+    writeClinicAdminCache(current, { emit: false });
+    return plan.result;
+  }
+
+  writeClinicAdminCache(plan.nextData);
+
+  try {
+    await persistNormalizedClinicAdminData(plan.nextData, scope);
+    return plan.result;
+  } catch {
+    clinicAdminUsesNormalizedTables = false;
+    return mutateClinicAdminStateData(mutator);
+  }
+};
+
 export const createPatientId = (phone: string) => `PAT${phone.slice(-4).padStart(4, "0")}`;
 
 export const findOpdBillByAppointmentId = (appointmentId: string) =>
@@ -558,7 +966,7 @@ export const createOpdBillRecord = async (bill: Omit<OpdBill, "id" | "billNo">) 
       result: nextBill,
       nextData: { ...data, opdBills: [nextBill, ...data.opdBills] },
     };
-  });
+  }, "opd");
 
 export const updateOpdBillRecord = async (billId: string, patch: Partial<Omit<OpdBill, "id" | "billNo">>) =>
   mutateClinicAdminData<OpdBill>((data) => {
@@ -592,7 +1000,7 @@ export const updateOpdBillRecord = async (billId: string, patch: Partial<Omit<Op
       result: nextBill,
       nextData: { ...data, opdBills: nextBills },
     };
-  });
+  }, "opd");
 
 export const addPharmacyMedicine = async (medicine: Omit<PharmacyMedicine, "id">) =>
   mutateClinicAdminData<PharmacyMedicine>((data) => {
@@ -601,7 +1009,7 @@ export const addPharmacyMedicine = async (medicine: Omit<PharmacyMedicine, "id">
       result: nextMedicine,
       nextData: { ...data, pharmacyMedicines: [nextMedicine, ...data.pharmacyMedicines] },
     };
-  });
+  }, "pharmacy");
 
 export const updatePharmacyMedicine = async (medicineId: string, patch: Omit<PharmacyMedicine, "id">) =>
   mutateClinicAdminData<PharmacyMedicine>((data) => {
@@ -628,7 +1036,7 @@ export const updatePharmacyMedicine = async (medicineId: string, patch: Omit<Pha
       result: nextMedicine,
       nextData: { ...data, pharmacyMedicines: nextMedicines },
     };
-  });
+  }, "pharmacy");
 
 export const deletePharmacyMedicine = async (medicineId: string) =>
   mutateClinicAdminData<PharmacyMedicine>((data) => {
@@ -645,7 +1053,7 @@ export const deletePharmacyMedicine = async (medicineId: string) =>
         pharmacyMedicines: data.pharmacyMedicines.filter((entry) => entry.id !== medicineId),
       },
     };
-  });
+  }, "pharmacy");
 
 export const createPharmacySaleInvoice = async (
   invoice: Omit<PharmacySaleInvoice, "id" | "invoiceNo" | "totalAmount" | "discount">,
@@ -705,7 +1113,60 @@ export const createPharmacySaleInvoice = async (
         pharmacySales: [nextInvoice, ...data.pharmacySales],
       },
     };
-  });
+  }, "pharmacy");
+
+export const updatePharmacySalePaymentStatus = async (
+  invoiceId: string,
+  paymentStatus: PharmacySaleInvoice["paymentStatus"],
+) =>
+  mutateClinicAdminData<PharmacySaleInvoice>((data) => {
+    const index = data.pharmacySales.findIndex((invoice) => invoice.id === invoiceId);
+
+    if (index === -1) {
+      throw new Error("Pharmacy invoice not found.");
+    }
+
+    const current = data.pharmacySales[index];
+    const nextInvoice = normalizePharmacySale(
+      {
+        ...current,
+        paymentStatus,
+      },
+      index,
+    );
+    const nextSales = [...data.pharmacySales];
+    nextSales[index] = nextInvoice;
+
+    return {
+      result: nextInvoice,
+      nextData: { ...data, pharmacySales: nextSales },
+    };
+  }, "pharmacy");
+
+export const markAllPharmacySalesPaid = async () =>
+  mutateClinicAdminData<number>((data) => {
+    const dueSales = data.pharmacySales.filter((invoice) => invoice.paymentStatus === "due");
+
+    if (dueSales.length === 0) {
+      return { result: 0, skip: true };
+    }
+
+    return {
+      result: dueSales.length,
+      nextData: {
+        ...data,
+        pharmacySales: data.pharmacySales.map((invoice, index) =>
+          normalizePharmacySale(
+            {
+              ...invoice,
+              paymentStatus: "paid",
+            },
+            index,
+          ),
+        ),
+      },
+    };
+  }, "pharmacy");
 
 export const addPharmacyPurchaseInvoice = async (
   invoice: Omit<PharmacyPurchaseInvoice, "id" | "invoiceNo" | "amount">,
@@ -757,4 +1218,4 @@ export const addPharmacyPurchaseInvoice = async (
         pharmacyPurchases: [nextInvoice, ...data.pharmacyPurchases],
       },
     };
-  });
+  }, "pharmacy");

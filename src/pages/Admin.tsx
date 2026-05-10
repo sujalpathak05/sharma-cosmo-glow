@@ -18,11 +18,14 @@ import {
   Mail,
   MapPin,
   Menu,
+  MessageCircle,
   MessageSquare,
   Phone,
   RefreshCw,
   Search,
+  Send,
   Settings,
+  ShieldCheck,
   Star,
   Users,
   Wallet,
@@ -51,6 +54,8 @@ import {
 } from "@/lib/appointmentStore";
 import { getConsultationFee, getConsultationModeLabel } from "@/lib/consultationMode";
 import { getServicePrice, formatServicePrice } from "@/lib/servicePricing";
+import { type ClinicRole, clinicRoleLabels } from "@/lib/adminRoles";
+import { createWhatsAppHref, createWhatsAppMessage, logWhatsAppMessage, type WhatsAppMessageType } from "@/lib/whatsappAutomation";
 import { cn } from "@/lib/utils";
 
 type Appointment = AppointmentRecord;
@@ -102,6 +107,12 @@ const sections: SectionItem[] = [
   { id: "reviews", label: "Reviews", caption: "Reputation desk", icon: Star },
   { id: "analytics", label: "Analytics", caption: "Performance", icon: BarChart3 },
 ];
+
+const roleSectionAccess: Record<ClinicRole, AdminSection[]> = {
+  admin: sections.map((section) => section.id),
+  doctor: ["overview", "doctor", "appointments", "messages", "billing", "patients", "followups", "analytics"],
+  staff: ["overview", "appointments", "messages", "billing", "pharmacy", "patients", "followups"],
+};
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-100 text-amber-900",
@@ -238,7 +249,7 @@ const EmptyState = ({ message }: { message: string }) => (
 );
 
 const Admin = () => {
-  const { session, loading: authLoading, signOut } = useAuth();
+  const { session, role, loading: authLoading, signOut } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
@@ -248,6 +259,8 @@ const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [opdDraftAppointmentId, setOpdDraftAppointmentId] = useState<string | null>(null);
   const [hasLocalBackups, setHasLocalBackups] = useState(false);
+  const allowedSectionIds = roleSectionAccess[role] ?? roleSectionAccess.admin;
+  const allowedSections = sections.filter((section) => allowedSectionIds.includes(section.id));
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -270,9 +283,22 @@ const Admin = () => {
     setLoading(false);
   };
 
+  const openWhatsAppMessage = (appointment: Appointment, type: WhatsAppMessageType) => {
+    const message = createWhatsAppMessage(appointment, type);
+    window.open(createWhatsAppHref(appointment.phone, message), "_blank", "noopener,noreferrer");
+    void logWhatsAppMessage(appointment, type, message, "opened");
+    toast.success(type === "confirmation" ? "WhatsApp confirmation opened." : "WhatsApp reminder opened.");
+  };
+
   useEffect(() => {
     document.body.classList.remove("bill-print-mode");
   }, []);
+
+  useEffect(() => {
+    if (!allowedSectionIds.includes(activeSection)) {
+      setActiveSection(allowedSectionIds[0] ?? "overview");
+    }
+  }, [activeSection, allowedSectionIds]);
 
   useEffect(() => {
     if (!session) return;
@@ -436,6 +462,10 @@ const Admin = () => {
       status: cancelledCount > 0 ? "Attention" : "Paused",
     },
   ];
+  const confirmationQueue = upcomingAppointments.filter((item) => item.status === "confirmed").slice(0, 8);
+  const reminderQueue = upcomingAppointments
+    .filter((item) => item.preferred_date === todayKey || item.preferred_date === tomorrowKey)
+    .slice(0, 8);
 
   const billingRows = [...appointments]
     .filter((item) => item.status === "completed")
@@ -544,7 +574,7 @@ const Admin = () => {
               {todayAppointments.length === 0 ? <EmptyState message="No appointments are scheduled for today yet." /> : <div className="space-y-3">{todayAppointments.slice(0, 6).map((item) => <button key={item.id} onClick={() => setActiveSection("appointments")} className="flex w-full items-center justify-between gap-4 rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg"><div><p className="font-medium text-foreground">{item.name}</p><p className="mt-1 text-sm text-muted-foreground">{item.service}</p></div><div className="text-right"><p className="font-medium text-foreground">{sqlTimeToSlotLabel(item.preferred_time) ?? "Time TBD"}</p><p className="mt-1 text-xs text-muted-foreground">{item.phone}</p></div></button>)}</div>}
             </Panel>
             <Panel title="Quick modules" subtitle="Jump into Sharma Cosmo Clinic operations blocks.">
-              <div className="grid gap-3 sm:grid-cols-2">{sections.filter((item) => item.id !== "overview").slice(0, 6).map((item) => { const Icon = item.icon; return <button key={item.id} onClick={() => setActiveSection(item.id)} className="rounded-[22px] border border-[#eddab7] bg-white/70 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff1d3] text-[#c58223]"><Icon className="h-5 w-5" /></span><div><p className="font-semibold text-foreground">{item.label}</p><p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.caption}</p></div></div></button>; })}</div>
+              <div className="grid gap-3 sm:grid-cols-2">{allowedSections.filter((item) => item.id !== "overview").slice(0, 6).map((item) => { const Icon = item.icon; return <button key={item.id} onClick={() => setActiveSection(item.id)} className="rounded-[22px] border border-[#eddab7] bg-white/70 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff1d3] text-[#c58223]"><Icon className="h-5 w-5" /></span><div><p className="font-semibold text-foreground">{item.label}</p><p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.caption}</p></div></div></button>; })}</div>
             </Panel>
           </div>
           <div className="grid gap-6 lg:grid-cols-3">
@@ -576,12 +606,60 @@ const Admin = () => {
 
     if (activeSection === "messages") {
       return (
-        <Panel title="Patient messaging desk" subtitle="Campaigns derived from live appointment and follow-up queues.">
-          <div className="overflow-hidden rounded-[24px] border border-[#eddab7] bg-white/70">
-            <div className="grid grid-cols-[1.3fr,0.9fr,0.8fr,0.8fr] gap-4 border-b border-[#eddab7] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"><span>Template</span><span>Schedule</span><span>Audience</span><span>Status</span></div>
-            {messageRows.map((item) => <div key={item.title} className="grid grid-cols-[1.3fr,0.9fr,0.8fr,0.8fr] gap-4 border-b border-[#f3e6ca] px-4 py-4 text-sm last:border-b-0"><div><p className="font-medium text-foreground">{item.title}</p><p className="mt-1 text-muted-foreground">{item.channel}</p></div><p className="text-muted-foreground">{item.schedule}</p><p className="font-medium text-foreground">{item.audience} patients</p><p className="font-medium text-foreground">{item.status}</p></div>)}
+        <div className="space-y-6">
+          <Panel title="Patient messaging desk" subtitle="Campaigns derived from live appointment and follow-up queues.">
+            <div className="overflow-hidden rounded-[24px] border border-[#eddab7] bg-white/70">
+              <div className="grid grid-cols-[1.3fr,0.9fr,0.8fr,0.8fr] gap-4 border-b border-[#eddab7] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"><span>Template</span><span>Schedule</span><span>Audience</span><span>Status</span></div>
+              {messageRows.map((item) => <div key={item.title} className="grid grid-cols-[1.3fr,0.9fr,0.8fr,0.8fr] gap-4 border-b border-[#f3e6ca] px-4 py-4 text-sm last:border-b-0"><div><p className="font-medium text-foreground">{item.title}</p><p className="mt-1 text-muted-foreground">{item.channel}</p></div><p className="text-muted-foreground">{item.schedule}</p><p className="font-medium text-foreground">{item.audience} patients</p><p className="font-medium text-foreground">{item.status}</p></div>)}
+            </div>
+          </Panel>
+
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Panel title="WhatsApp confirmations" subtitle="Confirmed bookings ke liye ready confirmation messages.">
+              {confirmationQueue.length === 0 ? <EmptyState message="No confirmed appointments are waiting for WhatsApp confirmation." /> : (
+                <div className="space-y-3">
+                  {confirmationQueue.map((item) => (
+                    <div key={`confirm-${item.id}`} className="rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">{item.name}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{item.service} • {formatDate(item.preferred_date)} • {sqlTimeToSlotLabel(item.preferred_time) ?? "Time TBD"}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{item.phone}</p>
+                        </div>
+                        <button onClick={() => openWhatsAppMessage(item, "confirmation")} className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
+                          <MessageCircle className="h-4 w-4" />
+                          Confirm
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
+
+            <Panel title="WhatsApp reminders" subtitle="Today aur tomorrow visits ke liye reminder queue.">
+              {reminderQueue.length === 0 ? <EmptyState message="No upcoming appointments need reminder messages right now." /> : (
+                <div className="space-y-3">
+                  {reminderQueue.map((item) => (
+                    <div key={`reminder-${item.id}`} className="rounded-[22px] border border-[#eddab7] bg-white/70 px-4 py-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">{item.name}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{item.service} • {formatDate(item.preferred_date)} • {sqlTimeToSlotLabel(item.preferred_time) ?? "Time TBD"}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{item.phone}</p>
+                        </div>
+                        <button onClick={() => openWhatsAppMessage(item, "reminder")} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#5a49d6] px-4 py-2 text-sm font-medium text-white shadow-sm">
+                          <Send className="h-4 w-4" />
+                          Remind
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
           </div>
-        </Panel>
+        </div>
       );
     }
     if (activeSection === "doctor") {
@@ -670,7 +748,7 @@ const Admin = () => {
                 <p className="mt-2 text-sm text-muted-foreground">Sharma Cosmo Clinic admin desk for appointments, patients and operations.</p>
                 <div className="mt-6 min-h-0 flex-1 rounded-[30px] border border-[#f1dfb9] bg-[linear-gradient(180deg,rgba(255,252,246,0.98),rgba(255,244,219,0.92))] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_40px_-34px_rgba(124,82,17,0.35)]">
                   <div className="h-full space-y-2 overflow-y-auto pr-1">
-                    {sections.map((section) => {
+                    {allowedSections.map((section) => {
                       const Icon = section.icon;
                       return <button key={section.id} onClick={() => { setActiveSection(section.id); setSidebarOpen(false); }} className={cn("flex w-full items-center gap-3 rounded-[22px] px-3 py-3 text-left transition", activeSection === section.id ? "bg-gradient-to-r from-[#f5bd5b] via-[#ffd986] to-[#fff2c7] text-foreground shadow-lg shadow-orange-200/50" : "text-muted-foreground hover:bg-[#fff5de] hover:text-foreground")}><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff5de] text-[#c2872a]"><Icon className="h-5 w-5" /></span><span className="min-w-0 flex-1"><span className="block font-medium">{section.label}</span><span className="block text-xs uppercase tracking-[0.16em] opacity-80">{section.caption}</span></span><ChevronRight className="h-4 w-4" /></button>;
                     })}
@@ -691,6 +769,10 @@ const Admin = () => {
                       <p className="mt-3 max-w-3xl text-sm text-[#65441b] sm:text-base">Manage doctor workflow, clinic bookings, OPD billing, pharmacy invoices, patient flow and follow-ups from a single dashboard.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/85 px-4 py-2.5 text-sm font-semibold text-[#5a3b1c] shadow-sm">
+                        <ShieldCheck className="h-4 w-4" />
+                        {clinicRoleLabels[role]} access
+                      </span>
                       <button onClick={async () => { await fetchAppointments(); toast.success("Dashboard refreshed successfully"); }} disabled={loading} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-foreground shadow-sm disabled:opacity-60"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh</button>
                       <button onClick={() => void signOut()} className="inline-flex items-center gap-2 rounded-full bg-[#5a3b1c] px-4 py-2.5 text-sm font-medium text-white shadow-sm"><LogOut className="h-4 w-4" />Logout</button>
                     </div>

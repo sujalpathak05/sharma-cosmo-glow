@@ -9,11 +9,14 @@ import {
   createPatientId,
   createPharmacySaleInvoice,
   deletePharmacyMedicine,
+  markAllPharmacySalesPaid,
   readClinicAdminData,
   subscribeClinicAdminData,
   updatePharmacyMedicine,
+  updatePharmacySalePaymentStatus,
   type ClinicAdminData,
   type PharmacyMedicine,
+  type PharmacySaleInvoice,
 } from "@/lib/clinicAdminStore";
 import type { AppointmentRecord } from "@/lib/appointmentStore";
 import { clinicBrand } from "@/lib/clinicBrand";
@@ -94,14 +97,43 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(readClinicAdminData().pharmacyPurchases[0]?.id ?? null);
   const [editingMedicineId, setEditingMedicineId] = useState<string | null>(null);
   const [medicineForm, setMedicineForm] = useState<MedicineFormState>(emptyMedicineForm());
-  const [saleForm, setSaleForm] = useState({ patientName: "", contactNo: "", date: toDateKey(), type: "OTC" as "OPD" | "OTC", discountPercent: 0, items: [createItemRow()] });
+  const [saleForm, setSaleForm] = useState({
+    patientName: "",
+    contactNo: "",
+    date: toDateKey(),
+    type: "OTC" as "OPD" | "OTC",
+    paymentStatus: "paid" as PharmacySaleInvoice["paymentStatus"],
+    discountPercent: 0,
+    items: [createItemRow()],
+  });
   const [purchaseForm, setPurchaseForm] = useState({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid" as "paid" | "partial" | "due", items: [createItemRow()] });
   const [selectedSalesDate, setSelectedSalesDate] = useState(toDateKey());
 
   useEffect(() => {
+    let isMounted = true;
     const syncData = () => setData(readClinicAdminData());
+
+    const settlePreviousBills = async () => {
+      try {
+        const updatedCount = await markAllPharmacySalesPaid();
+        if (!isMounted) return;
+        if (updatedCount > 0) {
+          setData(readClinicAdminData());
+          toast.success(`${updatedCount} previous pharmacy bills marked paid.`);
+        }
+      } catch {
+        toast.error("Unable to mark previous pharmacy bills paid.");
+      }
+    };
+
     syncData();
-    return subscribeClinicAdminData(syncData);
+    void settlePreviousBills();
+    const unsubscribe = subscribeClinicAdminData(syncData);
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const term = search.trim().toLowerCase();
@@ -113,7 +145,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
   const selectedPurchase = data.pharmacyPurchases.find((invoice) => invoice.id === selectedPurchaseId) ?? data.pharmacyPurchases[0] ?? null;
   const totalStock = data.pharmacyMedicines.reduce((sum, item) => sum + item.stock, 0);
   const dueSales = data.pharmacySales.filter((item) => item.paymentStatus === "due").length;
-  const linkedPatients = new Set(appointments.map((item) => item.phone)).size;
+  const dueSalesAmount = data.pharmacySales.reduce((sum, invoice) => sum + (invoice.paymentStatus === "due" ? invoice.totalAmount : 0), 0);
   const todayKey = toDateKey();
   const dailySalesRows = useMemo(() => {
     const rows = new Map<string, { date: string; invoices: number; amount: number; items: number; dueAmount: number }>();
@@ -162,7 +194,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
     setEditingMedicineId(null);
     setMedicineForm(emptyMedicineForm());
   };
-  const resetSaleForm = () => setSaleForm({ patientName: "", contactNo: "", date: toDateKey(), type: "OTC", discountPercent: 0, items: [createItemRow()] });
+  const resetSaleForm = () => setSaleForm({ patientName: "", contactNo: "", date: toDateKey(), type: "OTC", paymentStatus: "paid", discountPercent: 0, items: [createItemRow()] });
   const resetPurchaseForm = () => setPurchaseForm({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid", items: [createItemRow()] });
 
   const updateRows = (type: "sale" | "purchase", key: string, patch: Partial<ItemRow>) => {
@@ -268,12 +300,13 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
         patientName: saleForm.patientName.trim(),
         contactNo: saleForm.contactNo.trim(),
         date: saleForm.date,
-        paymentStatus: saleForm.type === "OPD" ? "due" : "paid",
+        paymentStatus: saleForm.paymentStatus,
         type: saleForm.type,
         discountPercent: saleDiscountPercent,
         items: salePreviewItems.map((item) => ({ medicineId: item.medicineId, name: item.name, qty: item.qty, price: item.price })),
       });
       setSelectedSaleId(invoice.id);
+      setSelectedSalesDate(normalizeDateKey(invoice.date) || todayKey);
       setShowSaleForm(false);
       resetSaleForm();
       toast.success(`Pharmacy invoice ${invoice.invoiceNo} created.`);
@@ -311,6 +344,19 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
       toast.success(`Purchase invoice ${invoice.invoiceNo} created and stock updated.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to create purchase invoice.");
+    }
+  };
+
+  const updateSalePayment = async (invoice: PharmacySaleInvoice, paymentStatus: PharmacySaleInvoice["paymentStatus"]) => {
+    if (invoice.paymentStatus === paymentStatus) return;
+
+    try {
+      const updatedInvoice = await updatePharmacySalePaymentStatus(invoice.id, paymentStatus);
+      setSelectedSaleId(updatedInvoice.id);
+      setSelectedSalesDate(normalizeDateKey(updatedInvoice.date) || todayKey);
+      toast.success(`${updatedInvoice.invoiceNo} marked ${paymentStatus}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to update payment status.");
     }
   };
 
@@ -406,7 +452,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
             <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Sale Bills</p><p className="mt-2 font-display text-3xl">{data.pharmacySales.length}</p></div>
             <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Total Sales</p><p className="mt-2 break-words font-display text-2xl">{formatMoney(totalSalesAmount)}</p></div>
             <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Today Sales</p><p className="mt-2 break-words font-display text-2xl">{formatMoney(todaySalesAmount)}</p></div>
-            <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Due Sales</p><p className="mt-2 font-display text-3xl">{dueSales}</p><p className="mt-1 text-xs text-white/70">{linkedPatients} linked patients</p></div>
+            <div className="rounded-[22px] bg-white/12 px-4 py-4"><p className="text-xs uppercase tracking-[0.16em] text-white/70">Due Sales</p><p className="mt-2 font-display text-3xl">{dueSales}</p><p className="mt-1 text-xs text-white/70">{formatMoney(dueSalesAmount)} due</p></div>
           </div>
         </div>
       </section>
@@ -469,7 +515,11 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-[#5a49d6]">{formatMoney(row.amount)}</p>
-                    <p className="text-xs text-muted-foreground">Due {formatMoney(row.dueAmount)}</p>
+                    {row.dueAmount > 0 ? (
+                      <p className="text-xs font-medium text-amber-700">Due {formatMoney(row.dueAmount)}</p>
+                    ) : (
+                      <p className="text-xs font-medium text-emerald-700">Paid</p>
+                    )}
                   </div>
                 </button>
               )) : <div className="rounded-[20px] border border-dashed border-[#eadfc8] px-4 py-8 text-sm text-muted-foreground">No sales records yet.</div>}
@@ -485,14 +535,9 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
             </div>
             <div className="mt-4 space-y-3">
               {selectedDateSales.length > 0 ? selectedDateSales.map((invoice) => (
-                <button
+                <div
                   key={invoice.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedSaleId(invoice.id);
-                    setView("sales");
-                  }}
-                  className="flex w-full items-center justify-between gap-4 rounded-[20px] border border-[#eadfc8] bg-white/80 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-md"
+                  className="flex w-full flex-col gap-4 rounded-[20px] border border-[#eadfc8] bg-white/80 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
                     <p className="font-medium text-[#5a49d6]">{invoice.invoiceNo}</p>
@@ -500,9 +545,28 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-foreground">{formatMoney(invoice.totalAmount)}</p>
-                    <p className="text-xs capitalize text-muted-foreground">{invoice.paymentStatus}</p>
+                    <p className={cn("text-xs font-medium capitalize", invoice.paymentStatus === "due" ? "text-amber-700" : "text-emerald-700")}>{invoice.paymentStatus}</p>
+                    <div className="mt-2 flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void updateSalePayment(invoice, invoice.paymentStatus === "due" ? "paid" : "due")}
+                        className="rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6]"
+                      >
+                        {invoice.paymentStatus === "due" ? "Mark Paid" : "Mark Due"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSaleId(invoice.id);
+                          setView("sales");
+                        }}
+                        className="rounded-full bg-[#5a49d6] px-3 py-1.5 text-xs font-medium text-white"
+                      >
+                        View
+                      </button>
+                    </div>
                   </div>
-                </button>
+                </div>
               )) : <div className="rounded-[20px] border border-dashed border-[#eadfc8] px-4 py-8 text-sm text-muted-foreground">No pharmacy sales found for this date.</div>}
             </div>
           </Surface>
@@ -576,7 +640,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between"><h3 className="font-display text-2xl text-foreground">Sales Invoice</h3><div className="flex flex-col gap-3 sm:flex-row"><SearchField value={search} onChange={setSearch} placeholder="Search patient or invoice" /><button onClick={() => setShowSaleForm((current) => !current)} className="inline-flex items-center gap-2 rounded-full bg-[#5a49d6] px-4 py-2.5 text-sm font-medium text-white"><Plus className="h-4 w-4" />Add New Sales Invoice</button></div></div>
             {showSaleForm ? (
               <div className="mt-5 space-y-4 rounded-[24px] border border-[#eadfc8] bg-white/80 p-5">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                   <label className="text-sm font-medium text-foreground">
                     Patient name
                     <input value={saleForm.patientName} onChange={(event) => setSaleForm((current) => ({ ...current, patientName: event.target.value }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" />
@@ -597,6 +661,13 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
                     </select>
                   </label>
                   <label className="text-sm font-medium text-foreground">
+                    Payment Status
+                    <select value={saleForm.paymentStatus} onChange={(event) => setSaleForm((current) => ({ ...current, paymentStatus: event.target.value as PharmacySaleInvoice["paymentStatus"] }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none">
+                      <option value="paid">Paid</option>
+                      <option value="due">Due</option>
+                    </select>
+                  </label>
+                  <label className="text-sm font-medium text-foreground">
                     Discount (%)
                     <input type="number" min="0" max="100" step="0.01" value={saleForm.discountPercent} onChange={(event) => setSaleForm((current) => ({ ...current, discountPercent: clampDiscountPercent(Number(event.target.value) || 0) }))} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" />
                   </label>
@@ -610,6 +681,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
                   <div className="text-left md:text-right">
                     <p className="text-sm text-muted-foreground">Subtotal: {formatMoney(saleSubtotal)}</p>
                     <p className="text-sm text-muted-foreground">Discount ({formatPercent(saleDiscountPercent)}): {formatMoney(saleDiscountAmount)}</p>
+                    <p className="text-sm text-muted-foreground capitalize">Payment: {saleForm.paymentStatus}</p>
                     <p className="text-sm text-muted-foreground">Estimated total</p>
                     <p className="font-display text-3xl text-[#5a49d6]">{formatMoney(saleDraftTotal)}</p>
                   </div>
@@ -621,7 +693,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
               </div>
             ) : null}
             <div className="mt-5 overflow-hidden rounded-[24px] border border-[#eadfc8] bg-white/70">
-              <div className="grid grid-cols-[1fr,0.75fr,0.55fr,0.8fr,1fr,0.8fr,0.9fr,0.6fr] gap-4 border-b border-[#eadfc8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <div className="grid grid-cols-[1fr,0.75fr,0.55fr,0.8fr,1fr,0.8fr,0.85fr,0.95fr,0.6fr] gap-4 border-b border-[#eadfc8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 <span>Invoice Id</span>
                 <span>Date</span>
                 <span>Type</span>
@@ -629,10 +701,11 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
                 <span>Patient Name</span>
                 <span>Contact</span>
                 <span>Total</span>
+                <span>Payment</span>
                 <span>Action</span>
               </div>
               {filteredSales.length > 0 ? filteredSales.map((invoice) => (
-                <div key={invoice.id} className="grid grid-cols-[1fr,0.75fr,0.55fr,0.8fr,1fr,0.8fr,0.9fr,0.6fr] gap-4 border-b border-[#f3ead8] px-4 py-4 text-sm last:border-b-0">
+                <div key={invoice.id} className="grid grid-cols-[1fr,0.75fr,0.55fr,0.8fr,1fr,0.8fr,0.85fr,0.95fr,0.6fr] gap-4 border-b border-[#f3ead8] px-4 py-4 text-sm last:border-b-0">
                   <span className="font-medium text-[#5a49d6]">{invoice.invoiceNo}</span>
                   <span>{formatDate(invoice.date)}</span>
                   <span>{invoice.type}</span>
@@ -640,6 +713,16 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
                   <span>{invoice.patientName}</span>
                   <span>{invoice.contactNo}</span>
                   <span>{formatMoney(invoice.totalAmount)}</span>
+                  <div>
+                    <p className={cn("font-medium capitalize", invoice.paymentStatus === "due" ? "text-amber-700" : "text-emerald-700")}>{invoice.paymentStatus}</p>
+                    <button
+                      type="button"
+                      onClick={() => void updateSalePayment(invoice, invoice.paymentStatus === "due" ? "paid" : "due")}
+                      className="mt-1 rounded-full border border-[#d8ccff] bg-white px-2.5 py-1 text-xs font-medium text-[#5a49d6] transition hover:bg-[#f5f1ff]"
+                    >
+                      {invoice.paymentStatus === "due" ? "Mark Paid" : "Mark Due"}
+                    </button>
+                  </div>
                   <button onClick={() => setSelectedSaleId(invoice.id)} className="rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6]">View</button>
                 </div>
               )) : <div className="px-4 py-8 text-sm text-muted-foreground">No sales records yet. Start by creating the first pharmacy bill.</div>}

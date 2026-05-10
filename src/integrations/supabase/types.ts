@@ -74,6 +74,33 @@ export type Database = {
         }
         Relationships: []
       }
+      clinic_staff_roles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          is_active: boolean
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          is_active?: boolean
+          role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       disabled_slots: {
         Row: {
           created_at: string
@@ -116,6 +143,122 @@ export type Database = {
         }
         Relationships: []
       }
+      opd_bill_items: {
+        Row: {
+          bill_id: string
+          discount: number
+          gst: number
+          id: string
+          label: string
+          position: number
+          qty: number
+          rate: number
+          total: number
+        }
+        Insert: {
+          bill_id: string
+          discount?: number
+          gst?: number
+          id?: string
+          label: string
+          position?: number
+          qty?: number
+          rate?: number
+          total?: number
+        }
+        Update: {
+          bill_id?: string
+          discount?: number
+          gst?: number
+          id?: string
+          label?: string
+          position?: number
+          qty?: number
+          rate?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opd_bill_items_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "opd_bills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opd_bills: {
+        Row: {
+          age: string
+          appointment_id: string | null
+          bill_date: string
+          bill_no: string
+          clinic_address: string
+          clinic_name: string
+          consultation_mode: string | null
+          created_at: string
+          doctor_name: string
+          doctor_speciality: string
+          gender: string
+          id: string
+          paid_amount: number
+          patient_id: string
+          patient_name: string
+          payment_mode: string
+          phone: string
+          status: string
+          total_amount: number
+          updated_at: string
+          visit_type: string
+        }
+        Insert: {
+          age?: string
+          appointment_id?: string | null
+          bill_date: string
+          bill_no: string
+          clinic_address: string
+          clinic_name: string
+          consultation_mode?: string | null
+          created_at?: string
+          doctor_name: string
+          doctor_speciality: string
+          gender?: string
+          id: string
+          paid_amount?: number
+          patient_id: string
+          patient_name: string
+          payment_mode: string
+          phone: string
+          status: string
+          total_amount?: number
+          updated_at?: string
+          visit_type?: string
+        }
+        Update: {
+          age?: string
+          appointment_id?: string | null
+          bill_date?: string
+          bill_no?: string
+          clinic_address?: string
+          clinic_name?: string
+          consultation_mode?: string | null
+          created_at?: string
+          doctor_name?: string
+          doctor_speciality?: string
+          gender?: string
+          id?: string
+          paid_amount?: number
+          patient_id?: string
+          patient_name?: string
+          payment_mode?: string
+          phone?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          visit_type?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           created_at: string
@@ -143,6 +286,256 @@ export type Database = {
           rating?: number
           text?: string
           treatment?: string
+        }
+        Relationships: []
+      }
+      pharmacy_medicines: {
+        Row: {
+          batch: string
+          created_at: string
+          expiry_date: string
+          generic: string
+          group_name: string
+          id: string
+          location: string
+          manufacturer: string
+          name: string
+          stock: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          batch?: string
+          created_at?: string
+          expiry_date: string
+          generic?: string
+          group_name?: string
+          id: string
+          location?: string
+          manufacturer?: string
+          name: string
+          stock?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          batch?: string
+          created_at?: string
+          expiry_date?: string
+          generic?: string
+          group_name?: string
+          id?: string
+          location?: string
+          manufacturer?: string
+          name?: string
+          stock?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pharmacy_purchase_items: {
+        Row: {
+          id: string
+          medicine_id: string | null
+          name: string
+          position: number
+          price: number
+          purchase_id: string
+          qty: number
+        }
+        Insert: {
+          id?: string
+          medicine_id?: string | null
+          name: string
+          position?: number
+          price?: number
+          purchase_id: string
+          qty?: number
+        }
+        Update: {
+          id?: string
+          medicine_id?: string | null
+          name?: string
+          position?: number
+          price?: number
+          purchase_id?: string
+          qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_purchase_items_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacy_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pharmacy_purchases: {
+        Row: {
+          amount: number
+          contact_no: string
+          created_at: string
+          id: string
+          invoice_no: string
+          payment_status: string
+          purchase_date: string
+          supplier_id: string
+          supplier_name: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          contact_no: string
+          created_at?: string
+          id: string
+          invoice_no: string
+          payment_status: string
+          purchase_date: string
+          supplier_id: string
+          supplier_name: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          contact_no?: string
+          created_at?: string
+          id?: string
+          invoice_no?: string
+          payment_status?: string
+          purchase_date?: string
+          supplier_id?: string
+          supplier_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pharmacy_sale_items: {
+        Row: {
+          id: string
+          medicine_id: string | null
+          name: string
+          position: number
+          price: number
+          qty: number
+          sale_id: string
+        }
+        Insert: {
+          id?: string
+          medicine_id?: string | null
+          name: string
+          position?: number
+          price?: number
+          qty?: number
+          sale_id: string
+        }
+        Update: {
+          id?: string
+          medicine_id?: string | null
+          name?: string
+          position?: number
+          price?: number
+          qty?: number
+          sale_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacy_sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pharmacy_sales: {
+        Row: {
+          contact_no: string
+          created_at: string
+          discount: number
+          discount_percent: number
+          id: string
+          invoice_no: string
+          patient_id: string
+          patient_name: string
+          payment_status: string
+          sale_date: string
+          sale_type: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          contact_no: string
+          created_at?: string
+          discount?: number
+          discount_percent?: number
+          id: string
+          invoice_no: string
+          patient_id: string
+          patient_name: string
+          payment_status: string
+          sale_date: string
+          sale_type: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          contact_no?: string
+          created_at?: string
+          discount?: number
+          discount_percent?: number
+          id?: string
+          invoice_no?: string
+          patient_id?: string
+          patient_name?: string
+          payment_status?: string
+          sale_date?: string
+          sale_type?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_message_logs: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          delivery_mode: string
+          id: string
+          message_body: string
+          message_type: string
+          patient_name: string
+          phone: string
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          delivery_mode?: string
+          id?: string
+          message_body: string
+          message_type: string
+          patient_name: string
+          phone: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          delivery_mode?: string
+          id?: string
+          message_body?: string
+          message_type?: string
+          patient_name?: string
+          phone?: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
         }
         Relationships: []
       }
