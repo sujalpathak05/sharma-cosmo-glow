@@ -5,17 +5,19 @@ import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { sectionPaths } from "@/lib/siteRoutes";
+import { sectionPaths, sectionRoutes } from "@/lib/siteRoutes";
 import Index from "./pages/Index.tsx";
 
 const Admin = lazy(() => import("./pages/Admin.tsx"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin.tsx"));
+const AppointmentPage = lazy(() => import("./pages/AppointmentPage.tsx"));
 const BlogDetail = lazy(() => import("./pages/BlogDetail.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient();
 
 const routeFallback = <div className="min-h-screen bg-background" />;
+const homeSectionPaths = sectionPaths.filter((path) => path !== sectionRoutes.appointment);
 
 const App = () => (
   <HelmetProvider>
@@ -27,7 +29,8 @@ const App = () => (
           <Suspense fallback={routeFallback}>
             <Routes>
               <Route path="/" element={<Index />} />
-              {sectionPaths.map((path) => (
+              <Route path={sectionRoutes.appointment} element={<AppointmentPage />} />
+              {homeSectionPaths.map((path) => (
                 <Route key={path} path={path} element={<Index />} />
               ))}
               <Route path="/blogs/:slug" element={<BlogDetail />} />
