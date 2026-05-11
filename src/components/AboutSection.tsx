@@ -1,6 +1,8 @@
 import doctorImage from "@/assets/doctor-profile.jpg";
 import { useEffect, useRef, useState } from "react";
 import { GraduationCap, Stethoscope, Heart, Award, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { sectionRoutes } from "@/lib/siteRoutes";
 
 const qualifications = [
   { icon: GraduationCap, title: "MBBS", desc: "Bachelor of Medicine and Bachelor of Surgery" },
@@ -87,8 +89,8 @@ const AboutSection = () => {
               ))}
             </div>
 
-            <a
-              href="#appointment"
+            <Link
+              to={sectionRoutes.appointment}
               className={`btn-primary inline-flex items-center gap-2 transition-all duration-700 ${
                 visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
@@ -96,7 +98,7 @@ const AboutSection = () => {
             >
               Book a Consultation
               <ArrowRight size={16} />
-            </a>
+            </Link>
           </div>
         </div>
       </div>

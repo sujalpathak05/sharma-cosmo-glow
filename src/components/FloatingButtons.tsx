@@ -1,5 +1,7 @@
 import { CalendarDays } from "lucide-react";
+import { Link } from "react-router-dom";
 import { clinicContact } from "@/lib/contactDetails";
+import { sectionRoutes } from "@/lib/siteRoutes";
 
 const FloatingButtons = () => (
   <>
@@ -18,14 +20,14 @@ const FloatingButtons = () => (
       </svg>
     </a>
 
-    <a
-      href="#appointment"
+    <Link
+      to={sectionRoutes.appointment}
       className="group fixed bottom-6 left-6 z-40 lg:hidden isolate flex items-center gap-2 px-5 py-3 rounded-full bg-primary text-primary-foreground font-body font-medium text-sm shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-transform"
     >
       <span className="absolute inset-0 rounded-full bg-primary/30" style={{ animation: "halo-pulse 3.4s ease-in-out infinite" }} />
       <CalendarDays size={18} className="relative z-10" />
       <span className="relative z-10">Book Now</span>
-    </a>
+    </Link>
   </>
 );
 

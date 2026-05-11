@@ -92,13 +92,13 @@ const BlogDetail = () => {
               Sharma <span className="text-primary">Cosmo</span> <span className="text-rose-500">Clinic</span>
             </Link>
 
-            <a
-              href="/#blogs"
+            <Link
+              to="/blogs"
               className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
             >
               <ArrowLeft size={16} />
               Back to blogs
-            </a>
+            </Link>
           </div>
 
           <section className="rounded-[2rem] border border-border bg-card p-7 shadow-sm sm:p-10">
@@ -208,10 +208,10 @@ const BlogDetail = () => {
                 </p>
               </div>
 
-              <a href="/#appointment" className="btn-primary inline-flex items-center gap-2 self-start lg:self-auto">
+              <Link to="/appointment" className="btn-primary inline-flex items-center gap-2 self-start lg:self-auto">
                 Book Consultation
                 <ArrowRight size={16} />
-              </a>
+              </Link>
             </div>
           </section>
 

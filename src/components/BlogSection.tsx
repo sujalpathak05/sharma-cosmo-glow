@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { blogPosts } from "@/data/blogPosts";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { sectionRoutes } from "@/lib/siteRoutes";
 
 const getCardsPerView = () => {
   if (typeof window === "undefined") return 1;
@@ -234,10 +235,10 @@ const BlogSection = () => {
               </p>
             </div>
 
-            <a href="#appointment" className="btn-primary inline-flex items-center gap-2 self-start lg:self-auto">
+            <Link to={sectionRoutes.appointment} className="btn-primary inline-flex items-center gap-2 self-start lg:self-auto">
               Book consultation
               <ArrowRight size={16} />
-            </a>
+            </Link>
           </div>
         </div>
       </div>

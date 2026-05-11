@@ -5,6 +5,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { sectionPaths } from "@/lib/siteRoutes";
 import Index from "./pages/Index.tsx";
 
 const Admin = lazy(() => import("./pages/Admin.tsx"));
@@ -26,6 +27,9 @@ const App = () => (
           <Suspense fallback={routeFallback}>
             <Routes>
               <Route path="/" element={<Index />} />
+              {sectionPaths.map((path) => (
+                <Route key={path} path={path} element={<Index />} />
+              ))}
               <Route path="/blogs/:slug" element={<BlogDetail />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/login" element={<AdminLogin />} />

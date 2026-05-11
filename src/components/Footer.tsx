@@ -1,5 +1,15 @@
 import { Heart, Mail, MapPin, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 import { clinicContact } from "@/lib/contactDetails";
+import { sectionRoutes } from "@/lib/siteRoutes";
+
+const quickLinks = [
+  { label: "About", to: sectionRoutes.about },
+  { label: "Services", to: sectionRoutes.services },
+  { label: "Blogs", to: sectionRoutes.blogs },
+  { label: "Gallery", to: sectionRoutes.gallery },
+  { label: "Contact", to: sectionRoutes.contact },
+];
 
 const Footer = () => (
   <footer className="bg-foreground text-primary-foreground/70 py-12 section-padding">
@@ -17,14 +27,14 @@ const Footer = () => (
         <div>
           <p className="font-body font-semibold text-primary-foreground text-sm mb-3">Quick Links</p>
           <ul className="space-y-2">
-            {["About", "Services", "Blogs", "Gallery", "Contact"].map((link) => (
-              <li key={link}>
-                <a
-                  href={`#${link.toLowerCase()}`}
+            {quickLinks.map((link) => (
+              <li key={link.to}>
+                <Link
+                  to={link.to}
                   className="font-body text-sm hover:text-primary-foreground transition-colors"
                 >
-                  {link}
-                </a>
+                  {link.label}
+                </Link>
               </li>
             ))}
           </ul>
@@ -42,9 +52,9 @@ const Footer = () => (
               "Anti-Aging",
             ].map((service) => (
               <li key={service}>
-                <a href="#services" className="font-body text-sm hover:text-primary-foreground transition-colors">
+                <Link to={sectionRoutes.services} className="font-body text-sm hover:text-primary-foreground transition-colors">
                   {service}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import HairTestCtaButton from "@/components/HairTestCtaButton";
 import heroImage from "@/assets/hero-clinic.jpg";
+import { sectionRoutes } from "@/lib/siteRoutes";
 
 const heroHighlights = [
   "Personalized acne and pigmentation care",
@@ -178,17 +180,17 @@ const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
                 }`}
                 style={{ transitionDelay: "1s" }}
               >
-                <a href="#appointment" className="btn-primary group inline-flex items-center gap-2">
+                <Link to={sectionRoutes.appointment} className="btn-primary group inline-flex items-center gap-2">
                   <span>Book Appointment</span>
                   <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
-                </a>
-                <a
-                  href="#services"
+                </Link>
+                <Link
+                  to={sectionRoutes.services}
                   className="btn-outline group inline-flex items-center gap-2 !border-primary-foreground/40 !text-primary-foreground hover:!bg-primary-foreground/10"
                 >
                   <span>Our Services</span>
                   <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
-                </a>
+                </Link>
               </div>
 
               <div

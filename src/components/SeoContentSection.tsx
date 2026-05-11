@@ -1,8 +1,10 @@
 import { ArrowRight, MapPin, Search, Stethoscope } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import FaqAccordion from "@/components/FaqAccordion";
 import { homeFaqs, homeKeywordClusters, homeSeoBlocks } from "@/data/homeSeo";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { sectionRoutes } from "@/lib/siteRoutes";
 
 const iconMap = [Search, Stethoscope, MapPin];
 
@@ -104,10 +106,10 @@ const SeoContentSection = () => {
               </p>
             </div>
 
-            <a href="#appointment" className="btn-primary inline-flex items-center gap-2 self-start lg:self-auto">
+            <Link to={sectionRoutes.appointment} className="btn-primary inline-flex items-center gap-2 self-start lg:self-auto">
               Book a consultation
               <ArrowRight size={16} />
-            </a>
+            </Link>
           </div>
         </div>
 

@@ -1,9 +1,11 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import HairTestModal from "@/components/HairTestModal";
 import { Helmet } from "react-helmet-async";
+import { useLocation, useNavigate } from "react-router-dom";
 import { clinicContact } from "@/lib/contactDetails";
+import { getPathForHash, getSectionIdForPath, scrollToSectionId } from "@/lib/siteRoutes";
 
 const AboutSection = lazy(() => import("@/components/AboutSection"));
 const ServicesSection = lazy(() => import("@/components/ServicesSection"));
@@ -62,7 +64,36 @@ const jsonLd = {
 
 const Index = () => {
   const [hairTestOpen, setHairTestOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
   const openHairTest = () => setHairTestOpen(true);
+
+  useEffect(() => {
+    const pathFromHash = getPathForHash(location.hash);
+    if (pathFromHash) {
+      navigate(pathFromHash, { replace: true });
+      return;
+    }
+
+    const sectionId = getSectionIdForPath(location.pathname);
+    if (!sectionId) return;
+
+    let timeoutId: number | undefined;
+
+    const scrollWithRetry = (attempt = 0) => {
+      const scrolled = scrollToSectionId(sectionId);
+      if (!scrolled && attempt < 50) {
+        timeoutId = window.setTimeout(() => scrollWithRetry(attempt + 1), 100);
+      }
+    };
+
+    const frameId = window.requestAnimationFrame(() => scrollWithRetry());
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [location.hash, location.pathname, navigate]);
 
   return (
     <>

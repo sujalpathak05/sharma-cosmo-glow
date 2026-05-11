@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { Menu, X, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 import HairTestCtaButton from "@/components/HairTestCtaButton";
 import { clinicContact } from "@/lib/contactDetails";
+import { sectionRoutes } from "@/lib/siteRoutes";
 
 const navLinks = [
-  { label: "Home", href: "#home" },
-  { label: "About", href: "#about" },
-  { label: "Services", href: "#services" },
-  { label: "Gallery", href: "#gallery" },
-  { label: "Testimonials", href: "#testimonials" },
-  { label: "Blogs", href: "#blogs" },
-  { label: "Contact", href: "#contact" },
+  { label: "Home", to: sectionRoutes.home },
+  { label: "About", to: sectionRoutes.about },
+  { label: "Services", to: sectionRoutes.services },
+  { label: "Gallery", to: sectionRoutes.gallery },
+  { label: "Testimonials", to: sectionRoutes.testimonials },
+  { label: "Blogs", to: sectionRoutes.blogs },
+  { label: "Contact", to: sectionRoutes.contact },
 ];
 
 type NavbarProps = {
@@ -38,24 +40,24 @@ const Navbar = ({ onHairTestOpen }: NavbarProps) => {
       } ${loaded ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}
     >
       <nav className="section-container section-padding flex items-center justify-between h-16 sm:h-20">
-        <a href="#home" className="font-display text-xl sm:text-2xl font-bold text-foreground tracking-tight hover:scale-105 transition-transform duration-200">
+        <Link to={sectionRoutes.home} className="font-display text-xl sm:text-2xl font-bold text-foreground tracking-tight hover:scale-105 transition-transform duration-200">
           Sharma <span className="text-primary">Cosmo Clinic</span>
-        </a>
+        </Link>
 
         {/* Desktop nav */}
         <ul className="hidden xl:flex items-center gap-4">
           {navLinks.map((link, i) => (
             <li
-              key={link.href}
+              key={link.to}
               className={`transition-all duration-500 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}
               style={{ transitionDelay: `${0.1 + i * 0.05}s` }}
             >
-              <a
-                href={link.href}
+              <Link
+                to={link.to}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary after:scale-x-0 after:origin-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-left"
               >
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -66,9 +68,9 @@ const Navbar = ({ onHairTestOpen }: NavbarProps) => {
             {clinicContact.phoneDisplay}
           </a>
           <HairTestCtaButton onClick={onHairTestOpen} compact />
-          <a href="#appointment" className="btn-primary text-sm !px-6 !py-2.5">
+          <Link to={sectionRoutes.appointment} className="btn-primary text-sm !px-6 !py-2.5">
             Book Appointment
-          </a>
+          </Link>
         </div>
 
         {/* Mobile toggle */}
@@ -88,15 +90,15 @@ const Navbar = ({ onHairTestOpen }: NavbarProps) => {
       <div className={`xl:hidden overflow-hidden transition-all duration-500 ease-out ${mobileOpen ? "max-h-[560px] opacity-100" : "max-h-0 opacity-0"}`}>
         <div className="bg-card/98 backdrop-blur-lg border-t border-border section-padding py-6 flex flex-col gap-4">
           {navLinks.map((link, i) => (
-            <a
-              key={link.href}
-              href={link.href}
+            <Link
+              key={link.to}
+              to={link.to}
               onClick={() => setMobileOpen(false)}
               className={`text-base font-medium text-foreground py-2 transition-all duration-300 ${mobileOpen ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}
               style={{ transitionDelay: mobileOpen ? `${i * 0.05}s` : "0s" }}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
           <HairTestCtaButton
             onClick={() => {
@@ -105,9 +107,9 @@ const Navbar = ({ onHairTestOpen }: NavbarProps) => {
             }}
             className="mt-2 w-full"
           />
-          <a href="#appointment" onClick={() => setMobileOpen(false)} className="btn-primary text-center mt-2">
+          <Link to={sectionRoutes.appointment} onClick={() => setMobileOpen(false)} className="btn-primary text-center mt-2">
             Book Appointment
-          </a>
+          </Link>
         </div>
       </div>
     </header>
