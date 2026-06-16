@@ -94,48 +94,15 @@ const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
                 Dermatologist in Noida | Skin, Hair &amp; Cosmetic Clinic
               </p>
 
-              <h1 className="space-y-3" style={{ textShadow: "0 10px 35px rgba(0,0,0,0.5)" }}>
+              <h1 style={{ textShadow: "0 10px 35px rgba(0,0,0,0.5)" }}>
                 <div className="overflow-hidden">
                   <span
                     className={`block heading-display text-4xl sm:text-5xl lg:text-6xl text-primary-foreground transition-all duration-1000 ease-out ${
                       loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"
                     }`}
-                    style={{ transitionDelay: "0.28s", lineHeight: "1.08" }}
+                    style={{ transitionDelay: "0.28s", lineHeight: "1.12" }}
                   >
-                    Skin, Hair &amp; Cosmetic Clinic in Noida
-                  </span>
-                </div>
-
-                <div className="overflow-hidden">
-                  <div
-                    className={`flex flex-wrap gap-3 transition-all duration-1000 ease-out ${
-                      loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"
-                    }`}
-                    style={{ transitionDelay: "0.42s" }}
-                  >
-                    {highlightedPhrases.map((phrase) => (
-                      <span
-                        key={phrase}
-                        className="inline-flex rounded-[1.05rem] border border-white/20 px-4 py-1.5 font-display text-2xl sm:text-3xl lg:text-4xl text-charcoal shadow-[0_24px_50px_-30px_rgba(0,0,0,0.85)]"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgba(255,248,238,0.98), rgba(246,214,152,0.96))",
-                        }}
-                      >
-                        {phrase}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="overflow-hidden">
-                  <span
-                    className={`block heading-display text-4xl sm:text-5xl lg:text-6xl text-primary-foreground transition-all duration-1000 ease-out ${
-                      loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"
-                    }`}
-                    style={{ transitionDelay: "0.56s", lineHeight: "1.08" }}
-                  >
-                    — dermatology treatments, aesthetic procedures &amp; hair restoration.
+                    Best Skin, Hair &amp; Cosmetic Clinic in Noida
                   </span>
                 </div>
               </h1>
