@@ -11,7 +11,7 @@ const heroHighlights = [
   "Laser hair removal and anti-aging planning",
 ];
 
-const highlightedPhrases = ["acne treatment", "PRP hair treatment"];
+const treatmentBadges = ["Acne Treatment", "PRP Hair Treatment", "Laser Hair Removal"];
 
 const heroCards = [
   {
@@ -94,7 +94,7 @@ const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
                 Dermatologist in Noida | Skin, Hair &amp; Cosmetic Clinic
               </p>
 
-              <h1 style={{ textShadow: "0 10px 35px rgba(0,0,0,0.5)" }}>
+              <h1 className="space-y-4" style={{ textShadow: "0 10px 35px rgba(0,0,0,0.5)" }}>
                 <div className="overflow-hidden">
                   <span
                     className={`block heading-display text-4xl sm:text-5xl lg:text-6xl text-primary-foreground transition-all duration-1000 ease-out ${
@@ -104,6 +104,28 @@ const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
                   >
                     Best Skin, Hair &amp; Cosmetic Clinic in Noida
                   </span>
+                </div>
+
+                <div className="overflow-hidden">
+                  <div
+                    className={`flex flex-wrap gap-3 transition-all duration-1000 ease-out ${
+                      loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full"
+                    }`}
+                    style={{ transitionDelay: "0.42s" }}
+                  >
+                    {treatmentBadges.map((badge) => (
+                      <span
+                        key={badge}
+                        className="inline-flex rounded-[1.05rem] border border-white/20 px-4 py-1.5 font-display text-xl sm:text-2xl lg:text-3xl text-charcoal shadow-[0_24px_50px_-30px_rgba(0,0,0,0.85)]"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(255,248,238,0.98), rgba(246,214,152,0.96))",
+                        }}
+                      >
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </h1>
 
