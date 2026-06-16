@@ -1,0 +1,1 @@
+CREATE POLICY "Allow updating appointments" ON public.appointments FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
