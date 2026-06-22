@@ -463,7 +463,7 @@ const AppointmentSection = () => {
             </div>
 
             <div className="mb-6">
-              <label className="font-body text-sm font-medium text-foreground mb-2 block">Preferred Time Slot</label>
+              <p className="font-body text-sm font-medium text-foreground mb-2">Preferred Time Slot</p>
               {formData.date && isDateOff(formData.date) ? (
                 <p className="text-muted-foreground text-sm font-body">Select an available date first.</p>
               ) : availableSlots.length === 0 && formData.date ? (

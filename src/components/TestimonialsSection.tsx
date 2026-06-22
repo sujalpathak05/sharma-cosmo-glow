@@ -127,41 +127,53 @@ const TestimonialsSection = () => {
           <div className="max-w-xl mx-auto mb-12 glass-panel rounded-[1.75rem] p-6 sm:p-7 shadow-lg animate-fade-up">
             <h3 className="font-display text-xl font-semibold text-foreground mb-4">Share Your Experience</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Your Name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:ring-2 focus:ring-primary/30 outline-none"
-                required
-              />
-              <select
-                value={form.treatment}
-                onChange={(e) => setForm({ ...form, treatment: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:ring-2 focus:ring-primary/30 outline-none"
-              >
-                {treatments.map((treatment) => (
-                  <option key={treatment} value={treatment}>{treatment}</option>
-                ))}
-              </select>
+              <div>
+                <label htmlFor="review-name" className="font-body text-sm font-medium text-foreground mb-1.5 block">Your Name</label>
+                <input
+                  id="review-name"
+                  type="text"
+                  placeholder="Your Name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:ring-2 focus:ring-primary/30 outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="review-treatment" className="font-body text-sm font-medium text-foreground mb-1.5 block">Treatment</label>
+                <select
+                  id="review-treatment"
+                  value={form.treatment}
+                  onChange={(e) => setForm({ ...form, treatment: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:ring-2 focus:ring-primary/30 outline-none"
+                >
+                  {treatments.map((treatment) => (
+                    <option key={treatment} value={treatment}>{treatment}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <p className="font-body text-sm text-muted-foreground mb-2">Rating</p>
-                <div className="flex gap-1">
+                <div className="flex gap-1" role="group" aria-label="Rating">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <button key={star} type="button" onClick={() => setForm({ ...form, rating: star })}>
+                    <button key={star} type="button" aria-label={`${star} star`} onClick={() => setForm({ ...form, rating: star })}>
                       <Star size={24} className={`transition-colors ${star <= form.rating ? "fill-gold text-gold" : "text-border"}`} />
                     </button>
                   ))}
                 </div>
               </div>
-              <textarea
-                placeholder="Write your experience..."
-                value={form.text}
-                onChange={(e) => setForm({ ...form, text: e.target.value })}
-                rows={4}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:ring-2 focus:ring-primary/30 outline-none resize-none"
-                required
-              />
+              <div>
+                <label htmlFor="review-text" className="font-body text-sm font-medium text-foreground mb-1.5 block">Your Experience</label>
+                <textarea
+                  id="review-text"
+                  placeholder="Write your experience..."
+                  value={form.text}
+                  onChange={(e) => setForm({ ...form, text: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/90 text-foreground font-body text-sm focus:ring-2 focus:ring-primary/30 outline-none resize-none"
+                  required
+                />
+              </div>
               <button type="submit" disabled={submitting} className="btn-primary w-full flex items-center justify-center gap-2">
                 {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                 Submit Review
