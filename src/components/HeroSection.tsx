@@ -51,6 +51,7 @@ const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
           style={{ transitionDuration: "1500ms" }}
           loading="eager"
           decoding="async"
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/88 via-foreground/62 to-foreground/28" />
         <div className="absolute inset-0 motion-grid mix-blend-soft-light" />

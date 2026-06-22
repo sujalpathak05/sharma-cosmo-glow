@@ -316,8 +316,9 @@ const AppointmentSection = () => {
 
             <div className="grid sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Name *</label>
+                <label htmlFor="appt-name" className="font-body text-sm font-medium text-foreground mb-1.5 block">Name *</label>
                 <input
+                  id="appt-name"
                   name="name"
                   type="text"
                   required
@@ -329,8 +330,9 @@ const AppointmentSection = () => {
                 />
               </div>
               <div>
-                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Phone *</label>
+                <label htmlFor="appt-phone" className="font-body text-sm font-medium text-foreground mb-1.5 block">Phone *</label>
                 <input
+                  id="appt-phone"
                   name="phone"
                   type="tel"
                   required
@@ -345,8 +347,9 @@ const AppointmentSection = () => {
 
             <div className="grid sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Email</label>
+                <label htmlFor="appt-email" className="font-body text-sm font-medium text-foreground mb-1.5 block">Email</label>
                 <input
+                  id="appt-email"
                   name="email"
                   type="email"
                   maxLength={255}
@@ -358,8 +361,9 @@ const AppointmentSection = () => {
               </div>
 
               <div>
-                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Gender *</label>
+                <label htmlFor="appt-gender" className="font-body text-sm font-medium text-foreground mb-1.5 block">Gender *</label>
                 <select
+                  id="appt-gender"
                   name="gender"
                   required
                   value={formData.gender}
@@ -378,8 +382,9 @@ const AppointmentSection = () => {
 
             <div className="grid sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Service *</label>
+                <label htmlFor="appt-service" className="font-body text-sm font-medium text-foreground mb-1.5 block">Service *</label>
                 <select
+                  id="appt-service"
                   name="service"
                   required
                   value={formData.service}
@@ -396,8 +401,9 @@ const AppointmentSection = () => {
               </div>
 
               <div>
-                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Consultation Mode *</label>
+                <label htmlFor="appt-mode" className="font-body text-sm font-medium text-foreground mb-1.5 block">Consultation Mode *</label>
                 <select
+                  id="appt-mode"
                   name="consultationMode"
                   required
                   value={formData.consultationMode}
@@ -413,8 +419,9 @@ const AppointmentSection = () => {
               </div>
 
               <div>
-                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Location *</label>
+                <label htmlFor="appt-location" className="font-body text-sm font-medium text-foreground mb-1.5 block">Location *</label>
                 <select
+                  id="appt-location"
                   name="location"
                   required
                   value={formData.location}
@@ -438,8 +445,9 @@ const AppointmentSection = () => {
             </div>
 
             <div className="mb-4">
-              <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Preferred Date</label>
+              <label htmlFor="appt-date" className="font-body text-sm font-medium text-foreground mb-1.5 block">Preferred Date</label>
               <input
+                id="appt-date"
                 name="date"
                 type="date"
                 min={today}
@@ -481,8 +489,9 @@ const AppointmentSection = () => {
             </div>
 
             <div className="mb-6">
-              <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Message (optional)</label>
+              <label htmlFor="appt-message" className="font-body text-sm font-medium text-foreground mb-1.5 block">Message (optional)</label>
               <textarea
+                id="appt-message"
                 name="message"
                 rows={3}
                 maxLength={1000}
