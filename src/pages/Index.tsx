@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-import HairTestModal from "@/components/HairTestModal";
 import { Helmet } from "react-helmet-async";
 import { useLocation, useNavigate } from "react-router-dom";
 import { clinicContact } from "@/lib/contactDetails";
 import { getPathForHash, getSectionIdForPath, scrollToSectionId } from "@/lib/siteRoutes";
 
+const HairTestModal = lazy(() => import("@/components/HairTestModal"));
 const AboutSection = lazy(() => import("@/components/AboutSection"));
 const ServicesSection = lazy(() => import("@/components/ServicesSection"));
 const BlogSection = lazy(() => import("@/components/BlogSection"));
@@ -133,7 +133,9 @@ const Index = () => {
         <Footer />
         <FloatingButtons />
       </Suspense>
-      <HairTestModal open={hairTestOpen} onOpenChange={setHairTestOpen} />
+      <Suspense fallback={null}>
+        <HairTestModal open={hairTestOpen} onOpenChange={setHairTestOpen} />
+      </Suspense>
     </>
   );
 };
