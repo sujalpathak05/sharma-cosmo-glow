@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import HairTestCtaButton from "@/components/HairTestCtaButton";
-import heroImage from "@/assets/hero-clinic.jpg";
 import { sectionRoutes } from "@/lib/siteRoutes";
+
+const heroImage = "/hero-clinic.webp";
 
 const heroHighlights = [
   "Personalized acne and pigmentation care",
@@ -50,7 +51,7 @@ const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
           className={`w-full h-full object-cover transition-transform ease-out ${loaded ? "scale-100" : "scale-110"}`}
           style={{ transitionDuration: "1500ms" }}
           loading="eager"
-          decoding="async"
+          decoding="sync"
           fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/88 via-foreground/62 to-foreground/28" />

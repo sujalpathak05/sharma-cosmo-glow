@@ -18,4 +18,26 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("react-router")) {
+            return "react-vendor";
+          }
+          if (id.includes("@supabase/")) {
+            return "supabase-vendor";
+          }
+          if (id.includes("@radix-ui/")) {
+            return "ui-vendor";
+          }
+          if (id.includes("@tanstack/") || id.includes("recharts") || id.includes("embla-carousel")) {
+            return "data-vendor";
+          }
+          return "vendor";
+        },
+      },
+    },
+  },
 }));
