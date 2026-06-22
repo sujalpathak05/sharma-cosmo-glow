@@ -51,7 +51,7 @@ const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
           className={`w-full h-full object-cover transition-transform ease-out ${loaded ? "scale-100" : "scale-110"}`}
           style={{ transitionDuration: "1500ms" }}
           loading="eager"
-          decoding="sync"
+          decoding="async"
           fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/88 via-foreground/62 to-foreground/28" />
