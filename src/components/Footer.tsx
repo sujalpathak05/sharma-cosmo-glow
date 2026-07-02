@@ -6,6 +6,7 @@ import { sectionRoutes } from "@/lib/siteRoutes";
 const quickLinks = [
   { label: "About", to: sectionRoutes.about },
   { label: "Services", to: sectionRoutes.services },
+  { label: "Book Appointment", to: sectionRoutes.appointment },
   { label: "Blogs", to: sectionRoutes.blogs },
   { label: "Gallery", to: sectionRoutes.gallery },
   { label: "Contact", to: sectionRoutes.contact },

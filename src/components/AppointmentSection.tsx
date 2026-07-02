@@ -309,6 +309,24 @@ const AppointmentSection = () => {
               </ul>
             </div>
 
+            <div className="mt-8">
+              <p className="font-body text-sm font-semibold text-foreground mb-3">What Happens at Your First Visit</p>
+              <ol className="space-y-2.5">
+                <li className="font-body text-sm text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Thorough assessment:</strong> Dr. Sharma reviews your medical history, current concerns, and lifestyle factors before recommending any treatment.
+                </li>
+                <li className="font-body text-sm text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Clear diagnosis:</strong> You receive a precise explanation of the root cause — not a quick prescription or surface-level advice.
+                </li>
+                <li className="font-body text-sm text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Tailored treatment plan:</strong> A step-by-step plan is created for your specific skin or hair concern, including in-clinic procedures and at-home care guidance.
+                </li>
+                <li className="font-body text-sm text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Follow-up support:</strong> The clinic provides clear guidance on what to expect after each procedure, and follow-up is built into every treatment pathway from the start.
+                </li>
+              </ol>
+            </div>
+
             <a
               href={clinicContact.whatsappHref}
               target="_blank"
