@@ -294,6 +294,21 @@ const AppointmentSection = () => {
 
             </div>
 
+            <div className="mt-8 space-y-3">
+              <p className="font-body text-sm font-semibold text-foreground">Why Patients Choose Sharma Cosmo Clinic</p>
+              <ul className="space-y-2.5">
+                <li className="font-body text-sm text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Doctor-led care from day one:</strong> Every consultation is personally handled by Dr. Vishikant Sharma (MBBS, CCEBDM, PGDCC, Fellowship in Aesthetic Medicine) — not delegated to technicians or junior staff.
+                </li>
+                <li className="font-body text-sm text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Personalised treatment plans:</strong> Your skin type, hair pattern, lifestyle, and goals shape every recommendation — from the first consultation through to follow-up care.
+                </li>
+                <li className="font-body text-sm text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Trusted by 8,500+ patients across Delhi NCR:</strong> Serving Noida, Delhi, and Ghaziabad with 12+ years of experience in dermatology, laser therapy, and aesthetic medicine.
+                </li>
+              </ul>
+            </div>
+
             <a
               href={clinicContact.whatsappHref}
               target="_blank"

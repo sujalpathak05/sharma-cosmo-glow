@@ -1,0 +1,25 @@
+# Sharma Cosmo Clinic
+
+> Sharma Cosmo Clinic is a doctor-led skin, hair, and cosmetic clinic in Noida, Uttar Pradesh, India. Founded and led by Dr. Vishikant Sharma (MBBS, CCEBDM, PGDCC, Fellowship in Aesthetic Medicine), the clinic serves patients across Delhi NCR with evidence-based dermatology and aesthetic medicine.
+
+## Services
+
+- [Acne & Skin Treatments](https://sharmacosmoclinic.com/services): Acne treatment, pigmentation correction, chemical peels, psoriasis treatment, vitiligo treatment, and general dermatology consultations
+- [Hair Treatments](https://sharmacosmoclinic.com/hair): PRP hair treatment, alopecia treatment, hair fall diagnosis, and scalp health consultations
+- [Laser Treatments](https://sharmacosmoclinic.com/laser): Laser hair removal, laser skin rejuvenation, and advanced cosmetic laser procedures
+- [Anti-Aging & Cosmetic](https://sharmacosmoclinic.com/anti-aging): Botox, dermal fillers, and anti-aging treatment planning
+
+## Pages
+
+- [Homepage](https://sharmacosmoclinic.com/): Overview of the clinic, doctor profile, services, patient testimonials, and contact information
+- [Book Appointment](https://sharmacosmoclinic.com/appointment): Online appointment booking form for skin, hair, laser, and cosmetic consultations
+- [Blog](https://sharmacosmoclinic.com/blogs/acne-treatment-guide-delhi-ncr): Patient education articles on skin and hair health by Dr. Vishikant Sharma
+
+## Clinic Details
+
+- **Doctor**: Dr. Vishikant Sharma — MBBS, CCEBDM, PGDCC, Fellowship in Aesthetic Medicine
+- **Address**: T-22, P Block, Sector 11, Noida, Uttar Pradesh 201301, India
+- **Phone**: +91 96507 96507
+- **Hours**: Monday–Saturday 11:00 AM–3:00 PM and 5:30 PM–8:00 PM; Sunday by appointment
+- **Areas Served**: Noida, Delhi, New Delhi, Ghaziabad, and surrounding Delhi NCR areas
+- **Established**: 12+ years of experience; 8,500+ patients treated

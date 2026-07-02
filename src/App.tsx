@@ -48,6 +48,7 @@ const AppointmentRoute = () => {
 
       <Navbar onHairTestOpen={() => setHairTestOpen(true)} />
       <main className="min-h-screen bg-rose-soft pt-20">
+        <h1 className="sr-only">Book an Appointment at Sharma Cosmo Clinic Noida</h1>
         <AppointmentSection />
       </main>
       <Suspense fallback={null}>

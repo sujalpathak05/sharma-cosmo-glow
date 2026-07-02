@@ -98,7 +98,7 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>Sharma Cosmo Clinic | Skin Clinic in Noida | Hair Treatment &amp; Cosmetic Clinic in Noida</title>
+        <title>Sharma Cosmo Clinic | Skin, Hair &amp; Cosmetic Clinic Noida</title>
         <meta
           name="description"
           content="Best dermatologist in Noida at Sharma Cosmo Clinic. Expert acne treatment, PRP hair treatment, laser hair removal, and cosmetic procedures for patients across Delhi NCR."
@@ -108,11 +108,11 @@ const Index = () => {
           content="skin clinic in Noida, cosmetic clinic in Noida, hair treatment in Noida, best dermatologist in Noida, acne treatment in Noida, PRP hair treatment in Noida, laser hair removal in Noida, pigmentation treatment, psoriasis treatment, alopecia treatment, vitiligo treatment, chemical peel treatment, botox clinic, anti-aging treatment, advanced skin care clinic, experienced dermatologist, Delhi NCR skin clinic"
         />
         <link rel="canonical" href="https://sharmacosmoclinic.com" />
-        <meta property="og:title" content="Sharma Cosmo Clinic | Skin Clinic in Noida | Hair Treatment &amp; Cosmetic Clinic in Noida" />
+        <meta property="og:title" content="Sharma Cosmo Clinic | Skin, Hair &amp; Cosmetic Clinic Noida" />
         <meta property="og:description" content="Best dermatologist in Noida. Expert acne treatment, PRP hair treatment, laser hair removal, and cosmetic procedures for patients across Delhi NCR." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://sharmacosmoclinic.com" />
-        <meta name="twitter:title" content="Sharma Cosmo Clinic | Skin Clinic in Noida | Hair Treatment &amp; Cosmetic Clinic in Noida" />
+        <meta name="twitter:title" content="Sharma Cosmo Clinic | Skin, Hair &amp; Cosmetic Clinic Noida" />
         <meta name="twitter:description" content="Best dermatologist in Noida. Expert acne treatment, PRP hair treatment, laser hair removal, and cosmetic procedures for patients across Delhi NCR." />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
