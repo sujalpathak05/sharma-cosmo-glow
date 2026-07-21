@@ -191,8 +191,10 @@ const appointmentMs = (appointment: Appointment) => {
 };
 
 const estimateValue = (service: string, consultationMode?: string | null) => {
-  if (consultationMode) return getConsultationFee(consultationMode);
   const value = service.toLowerCase();
+  // PRP is always ₹3,000 regardless of consultation mode
+  if (value.includes("prp")) return 3000;
+  if (consultationMode) return getConsultationFee(consultationMode);
   if (value.includes("full body")) return 60000;
   if (value.includes("bikini")) return 30000;
   if (value.includes("under arm") || value.includes("underarm")) return 15000;
@@ -202,7 +204,6 @@ const estimateValue = (service: string, consultationMode?: string | null) => {
   if (value.includes("laser") && value.includes("trial")) return 30000;
   if (value.includes("mizo")) return 5500;
   if (value.includes("gfc")) return 4500;
-  if (value.includes("prp")) return 3000;
   if (value.includes("filler")) return 18000;
   if (value.includes("botox")) return 12000;
   if (value.includes("laser")) return 4500;

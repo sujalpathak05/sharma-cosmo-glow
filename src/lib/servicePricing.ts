@@ -8,6 +8,7 @@ export type ServiceOption = {
 
 export const serviceOptions: ServiceOption[] = [
   // General services (price depends on consultation mode)
+  { label: "Hair Treatment", price: null, group: "General" },
   { label: "Acne and Skin Treatment", price: null, group: "General" },
   { label: "Chemical Peel Treatment", price: null, group: "General" },
   { label: "PRP Hair Treatment", price: null, group: "General" },
@@ -28,6 +29,7 @@ export const serviceOptions: ServiceOption[] = [
   { label: "Laser - Trial", price: 30000, group: "Laser" },
 
   // Hair therapy
+  { label: "PRP Treatment", price: 3000, group: "Hair Therapy" },
   { label: "PRP", price: 3000, group: "Hair Therapy" },
   { label: "GFC", price: 4500, group: "Hair Therapy" },
   { label: "Mizo", price: 5500, group: "Hair Therapy" },

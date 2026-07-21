@@ -6,12 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { clinicContact } from "@/lib/contactDetails";
 import { slotLabelToSqlTime } from "@/lib/appointmentTime";
 import { buildStoredAppointmentMessage, removeLocalAppointment, saveLocalAppointment } from "@/lib/appointmentStore";
-import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, type ConsultationMode } from "@/lib/consultationMode";
+import { consultationModeOptions, getConsultationFee, getConsultationModeLabel, PRP_SERVICE_LABEL, type ConsultationMode } from "@/lib/consultationMode";
 import { patientGenderOptions, type PatientGender } from "@/lib/patientGender";
 
 const locations = [{ value: "Noida", label: "Noida" }];
 const appointmentServiceOptions = [
-  { label: "Hair Solution" },
+  { label: "Hair Treatment" },
+  { label: "PRP Treatment" },
   { label: "Skin Solution" },
   { label: "Psoriasis Treatment" },
   { label: "Alopecia Treatment" },
@@ -230,8 +231,10 @@ const AppointmentSection = () => {
               <strong>{formData.service}</strong> at <strong>{formData.location}</strong>.
             </p>
             <p className="font-body text-sm text-muted-foreground mb-3">
-              Consultation mode: <strong>{getConsultationModeLabel(formData.consultationMode)}</strong> - Fee{" "}
-              <strong>Rs. {getConsultationFee(formData.consultationMode)}</strong>
+              {formData.service === PRP_SERVICE_LABEL
+                ? <>Treatment Fee: <strong>Rs. 3,000</strong></>
+                : <>Consultation mode: <strong>{getConsultationModeLabel(formData.consultationMode)}</strong> - Fee <strong>Rs. {getConsultationFee(formData.consultationMode)}</strong></>
+              }
             </p>
             {savedMode === "local" ? (
               <p className="font-body text-sm text-muted-foreground mb-8">
@@ -471,9 +474,14 @@ const AppointmentSection = () => {
 
 
             <div className="mb-4 rounded-[1.25rem] border border-[#ead7b0] bg-[#fff8ed] px-4 py-4">
-              <p className="font-body text-xs uppercase tracking-[0.18em] text-[#a16c23]">Consultation Fee</p>
+              <p className="font-body text-xs uppercase tracking-[0.18em] text-[#a16c23]">
+                {formData.service === PRP_SERVICE_LABEL ? "Treatment Fee" : "Consultation Fee"}
+              </p>
               <p className="mt-2 font-body text-sm text-foreground">
-                {getConsultationModeLabel(formData.consultationMode)}: <strong>Rs. {getConsultationFee(formData.consultationMode)}</strong>
+                {formData.service === PRP_SERVICE_LABEL
+                  ? <><strong>PRP Treatment</strong>: <strong>Rs. 3,000</strong></>
+                  : <>{getConsultationModeLabel(formData.consultationMode)}: <strong>Rs. {getConsultationFee(formData.consultationMode)}</strong></>
+                }
               </p>
             </div>
 
