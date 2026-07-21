@@ -11,7 +11,6 @@ export const serviceOptions: ServiceOption[] = [
   { label: "Hair Treatment", price: null, group: "General" },
   { label: "Acne and Skin Treatment", price: null, group: "General" },
   { label: "Chemical Peel Treatment", price: null, group: "General" },
-  { label: "PRP Hair Treatment", price: null, group: "General" },
   { label: "Psoriasis Treatment", price: null, group: "General" },
   { label: "Alopecia Treatment", price: null, group: "General" },
   { label: "Vitiligo Treatment", price: null, group: "General" },
