@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Menu, X, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import HairTestCtaButton from "@/components/HairTestCtaButton";
+import SkinTestCtaButton from "@/components/SkinTestCtaButton";
 import { clinicContact } from "@/lib/contactDetails";
 import { sectionRoutes } from "@/lib/siteRoutes";
 
@@ -17,9 +18,10 @@ const navLinks = [
 
 type NavbarProps = {
   onHairTestOpen: () => void;
+  onSkinTestOpen: () => void;
 };
 
-const Navbar = ({ onHairTestOpen }: NavbarProps) => {
+const Navbar = ({ onHairTestOpen, onSkinTestOpen }: NavbarProps) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -68,6 +70,7 @@ const Navbar = ({ onHairTestOpen }: NavbarProps) => {
             {clinicContact.phoneDisplay}
           </a>
           <HairTestCtaButton onClick={onHairTestOpen} compact />
+          <SkinTestCtaButton onClick={onSkinTestOpen} compact />
           <Link to={sectionRoutes.appointment} className="btn-primary text-sm !px-6 !py-2.5">
             Book Appointment
           </Link>
@@ -106,6 +109,13 @@ const Navbar = ({ onHairTestOpen }: NavbarProps) => {
               onHairTestOpen();
             }}
             className="mt-2 w-full"
+          />
+          <SkinTestCtaButton
+            onClick={() => {
+              setMobileOpen(false);
+              onSkinTestOpen();
+            }}
+            className="w-full"
           />
           <Link to={sectionRoutes.appointment} onClick={() => setMobileOpen(false)} className="btn-primary text-center mt-2">
             Book Appointment

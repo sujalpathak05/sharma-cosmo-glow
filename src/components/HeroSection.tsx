@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import HairTestCtaButton from "@/components/HairTestCtaButton";
+import SkinTestCtaButton from "@/components/SkinTestCtaButton";
 import { sectionRoutes } from "@/lib/siteRoutes";
 
 const heroImage = "/hero-clinic.webp";
@@ -33,9 +34,10 @@ const stats = [
 
 type HeroSectionProps = {
   onHairTestOpen: () => void;
+  onSkinTestOpen: () => void;
 };
 
-const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
+const HeroSection = ({ onHairTestOpen, onSkinTestOpen }: HeroSectionProps) => {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -191,12 +193,15 @@ const HeroSection = ({ onHairTestOpen }: HeroSectionProps) => {
                 style={{ transitionDelay: "1.08s" }}
               >
                 <h2 className="font-display text-2xl leading-tight text-charcoal sm:text-3xl">
-                  Know the root cause of your hair problems
+                  Know the root cause of your hair &amp; skin problems
                 </h2>
                 <p className="mt-3 max-w-xl font-body text-sm leading-relaxed text-charcoal/75 sm:text-base">
-                  Take our quick hair test and get expert guidance from Sharma Cosmo Clinic.
+                  Take our quick hair or skin test and get expert guidance from Sharma Cosmo Clinic.
                 </p>
-                <HairTestCtaButton onClick={onHairTestOpen} className="mt-5 w-full sm:w-auto" />
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <HairTestCtaButton onClick={onHairTestOpen} className="w-full sm:w-auto" />
+                  <SkinTestCtaButton onClick={onSkinTestOpen} className="w-full sm:w-auto" />
+                </div>
               </div>
             </div>
 

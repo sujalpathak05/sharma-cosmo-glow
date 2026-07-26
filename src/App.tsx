@@ -5,6 +5,7 @@ import { Helmet, HelmetProvider } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 
 const HairTestModal = lazy(() => import("@/components/HairTestModal"));
+const SkinTestModal = lazy(() => import("@/components/SkinTestModal"));
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const Toaster = lazy(() => import("@/components/ui/toaster").then((m) => ({ default: m.Toaster })));
@@ -28,6 +29,7 @@ const homeSectionPaths = sectionPaths.filter((path) => path !== sectionRoutes.ap
 
 const AppointmentRoute = () => {
   const [hairTestOpen, setHairTestOpen] = useState(false);
+  const [skinTestOpen, setSkinTestOpen] = useState(false);
 
   return (
     <>
@@ -47,7 +49,7 @@ const AppointmentRoute = () => {
         <meta property="og:url" content="https://sharmacosmoclinic.com/appointment" />
       </Helmet>
 
-      <Navbar onHairTestOpen={() => setHairTestOpen(true)} />
+      <Navbar onHairTestOpen={() => setHairTestOpen(true)} onSkinTestOpen={() => setSkinTestOpen(true)} />
       <main className="min-h-screen bg-rose-soft pt-20">
         <h1 className="sr-only">Book an Appointment at Sharma Cosmo Clinic Noida</h1>
         <AppointmentSection />
@@ -58,6 +60,7 @@ const AppointmentRoute = () => {
       <FloatingButtons />
       <Suspense fallback={null}>
         <HairTestModal open={hairTestOpen} onOpenChange={setHairTestOpen} />
+        <SkinTestModal open={skinTestOpen} onOpenChange={setSkinTestOpen} />
       </Suspense>
     </>
   );

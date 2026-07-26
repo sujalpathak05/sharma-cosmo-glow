@@ -7,6 +7,7 @@ import { clinicContact } from "@/lib/contactDetails";
 import { getPathForHash, getSectionIdForPath, scrollToSectionId } from "@/lib/siteRoutes";
 
 const HairTestModal = lazy(() => import("@/components/HairTestModal"));
+const SkinTestModal = lazy(() => import("@/components/SkinTestModal"));
 const AboutSection = lazy(() => import("@/components/AboutSection"));
 const ServicesSection = lazy(() => import("@/components/ServicesSection"));
 const BlogSection = lazy(() => import("@/components/BlogSection"));
@@ -64,9 +65,11 @@ const jsonLd = {
 
 const Index = () => {
   const [hairTestOpen, setHairTestOpen] = useState(false);
+  const [skinTestOpen, setSkinTestOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const openHairTest = () => setHairTestOpen(true);
+  const openSkinTest = () => setSkinTestOpen(true);
 
   useEffect(() => {
     const pathFromHash = getPathForHash(location.hash);
@@ -116,9 +119,9 @@ const Index = () => {
         <meta name="twitter:description" content="Best dermatologist in Noida. Expert acne treatment, PRP hair treatment, laser hair removal, and cosmetic procedures for patients across Delhi NCR." />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
-      <Navbar onHairTestOpen={openHairTest} />
+      <Navbar onHairTestOpen={openHairTest} onSkinTestOpen={openSkinTest} />
       <main>
-        <HeroSection onHairTestOpen={openHairTest} />
+        <HeroSection onHairTestOpen={openHairTest} onSkinTestOpen={openSkinTest} />
         <Suspense fallback={<div className="min-h-[40vh]" />}>
           <AboutSection />
           <ServicesSection />
@@ -135,6 +138,7 @@ const Index = () => {
       </Suspense>
       <Suspense fallback={null}>
         <HairTestModal open={hairTestOpen} onOpenChange={setHairTestOpen} />
+        <SkinTestModal open={skinTestOpen} onOpenChange={setSkinTestOpen} />
       </Suspense>
     </>
   );
