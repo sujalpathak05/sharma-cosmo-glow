@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import HairTestCtaButton from "@/components/HairTestCtaButton";
-import SkinTestCtaButton from "@/components/SkinTestCtaButton";
+import TakeTestCtaButton from "@/components/TakeTestCtaButton";
 import { sectionRoutes } from "@/lib/siteRoutes";
 
 const heroImage = "/hero-clinic.webp";
@@ -198,9 +197,12 @@ const HeroSection = ({ onHairTestOpen, onSkinTestOpen }: HeroSectionProps) => {
                 <p className="mt-3 max-w-xl font-body text-sm leading-relaxed text-charcoal/75 sm:text-base">
                   Take our quick hair or skin test and get expert guidance from Sharma Cosmo Clinic.
                 </p>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <HairTestCtaButton onClick={onHairTestOpen} className="w-full sm:w-auto" />
-                  <SkinTestCtaButton onClick={onSkinTestOpen} className="w-full sm:w-auto" />
+                <div className="mt-5">
+                  <TakeTestCtaButton
+                    onHairTestOpen={onHairTestOpen}
+                    onSkinTestOpen={onSkinTestOpen}
+                    className="w-full sm:w-auto"
+                  />
                 </div>
               </div>
             </div>

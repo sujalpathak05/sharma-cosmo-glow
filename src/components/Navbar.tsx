@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Menu, X, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
-import HairTestCtaButton from "@/components/HairTestCtaButton";
-import SkinTestCtaButton from "@/components/SkinTestCtaButton";
+import TakeTestCtaButton from "@/components/TakeTestCtaButton";
 import { clinicContact } from "@/lib/contactDetails";
 import { sectionRoutes } from "@/lib/siteRoutes";
 
@@ -69,8 +68,7 @@ const Navbar = ({ onHairTestOpen, onSkinTestOpen }: NavbarProps) => {
             <Phone size={16} />
             {clinicContact.phoneDisplay}
           </a>
-          <HairTestCtaButton onClick={onHairTestOpen} compact />
-          <SkinTestCtaButton onClick={onSkinTestOpen} compact />
+          <TakeTestCtaButton onHairTestOpen={onHairTestOpen} onSkinTestOpen={onSkinTestOpen} compact />
           <Link to={sectionRoutes.appointment} className="btn-primary text-sm !px-6 !py-2.5">
             Book Appointment
           </Link>
@@ -103,19 +101,16 @@ const Navbar = ({ onHairTestOpen, onSkinTestOpen }: NavbarProps) => {
               {link.label}
             </Link>
           ))}
-          <HairTestCtaButton
-            onClick={() => {
+          <TakeTestCtaButton
+            onHairTestOpen={() => {
               setMobileOpen(false);
               onHairTestOpen();
             }}
-            className="mt-2 w-full"
-          />
-          <SkinTestCtaButton
-            onClick={() => {
+            onSkinTestOpen={() => {
               setMobileOpen(false);
               onSkinTestOpen();
             }}
-            className="w-full"
+            className="mt-2 w-full"
           />
           <Link to={sectionRoutes.appointment} onClick={() => setMobileOpen(false)} className="btn-primary text-center mt-2">
             Book Appointment
