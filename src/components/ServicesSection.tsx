@@ -1,19 +1,20 @@
 import { Sparkles, Droplets, Wind, Zap, Clock, Scissors, ArrowRight } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 
 const hairServices = [
-  { icon: Wind, title: "PRP Hair Treatment", desc: "Scalp-focused planning for hair fall, early thinning, and weak follicles with PRP, supportive medical care, and long-term maintenance guidance.", detail: "Hair treatment starts with scalp and trigger assessment so procedures like PRP are recommended only when they are likely to help." },
-  { icon: Wind, title: "Alopecia Treatment", desc: "Focused evaluation for patchy hair loss, thinning patterns, scalp inflammation, and shedding with medical and procedure-based options where suitable.", detail: "Alopecia care begins with identifying the type of hair loss so medicines, scalp care, PRP, or supportive treatments are chosen appropriately." },
+  { icon: Wind, title: "PRP Hair Treatment", slug: "prp-hair-treatment", desc: "Scalp-focused planning for hair fall, early thinning, and weak follicles with PRP, supportive medical care, and long-term maintenance guidance.", detail: "Hair treatment starts with scalp and trigger assessment so procedures like PRP are recommended only when they are likely to help." },
+  { icon: Wind, title: "Alopecia Treatment", slug: "alopecia-treatment", desc: "Focused evaluation for patchy hair loss, thinning patterns, scalp inflammation, and shedding with medical and procedure-based options where suitable.", detail: "Alopecia care begins with identifying the type of hair loss so medicines, scalp care, PRP, or supportive treatments are chosen appropriately." },
 ];
 
 const skinServices = [
-  { icon: Sparkles, title: "Acne and Skin Treatment", desc: "Doctor-led care for active acne, acne marks, pigmentation, dullness, and uneven skin tone with routines that respect your skin barrier.", detail: "Plans may include consultation, home-care correction, clinic procedures, and follow-up that matches your skin type and recovery comfort." },
-  { icon: Droplets, title: "Chemical Peel Treatment", desc: "Targeted peel planning for tan, acne marks, oil control, texture, and superficial pigmentation with gradual, safe improvement.", detail: "Each peel is selected according to sensitivity, pigment risk, and the exact concern being treated instead of using a one-size-fits-all protocol." },
-  { icon: Droplets, title: "Psoriasis Treatment", desc: "Assessment-led care for psoriasis flare-ups, scaling, redness, and itch with medical treatment, trigger review, and maintenance support.", detail: "Treatment is tailored to severity, affected areas, triggers, and lifestyle factors so flare control and long-term skin comfort stay realistic." },
-  { icon: Sparkles, title: "Vitiligo Treatment", desc: "Personalized care for white patches, color change, and progression monitoring with counseling, medical therapy, and follow-up planning.", detail: "Vitiligo treatment is planned around activity, site, spread, and response so patients know what improvement can reasonably look like over time." },
-  { icon: Zap, title: "Laser Hair Removal", desc: "Laser-based hair reduction and skin-focused laser planning for patients who want smoother results and less dependence on frequent waxing.", detail: "Suitability is assessed according to skin tone, hair thickness, target area, and the number of sessions needed for consistent reduction." },
-  { icon: Clock, title: "Botox and Anti-Aging Treatment", desc: "Natural-looking anti-aging planning for early lines, tired skin, texture changes, and preventive aesthetic care.", detail: "Botox, peels, hydration support, and skin-quality treatments are recommended conservatively to keep results refined and facial expressions balanced." },
-  { icon: Scissors, title: "Aesthetic Consultations", desc: "Personalized consultations for glow goals, event preparation, pigmentation correction, and doctor-guided cosmetic treatment planning.", detail: "Every recommendation is explained in clear terms so you understand the expected benefit, downtime, and maintenance before you proceed." },
+  { icon: Sparkles, title: "Acne and Skin Treatment", slug: "acne-and-skin-treatment", desc: "Doctor-led care for active acne, acne marks, pigmentation, dullness, and uneven skin tone with routines that respect your skin barrier.", detail: "Plans may include consultation, home-care correction, clinic procedures, and follow-up that matches your skin type and recovery comfort." },
+  { icon: Droplets, title: "Chemical Peel Treatment", slug: "chemical-peel-treatment", desc: "Targeted peel planning for tan, acne marks, oil control, texture, and superficial pigmentation with gradual, safe improvement.", detail: "Each peel is selected according to sensitivity, pigment risk, and the exact concern being treated instead of using a one-size-fits-all protocol." },
+  { icon: Droplets, title: "Psoriasis Treatment", slug: "psoriasis-treatment", desc: "Assessment-led care for psoriasis flare-ups, scaling, redness, and itch with medical treatment, trigger review, and maintenance support.", detail: "Treatment is tailored to severity, affected areas, triggers, and lifestyle factors so flare control and long-term skin comfort stay realistic." },
+  { icon: Sparkles, title: "Vitiligo Treatment", slug: "vitiligo-treatment", desc: "Personalized care for white patches, color change, and progression monitoring with counseling, medical therapy, and follow-up planning.", detail: "Vitiligo treatment is planned around activity, site, spread, and response so patients know what improvement can reasonably look like over time." },
+  { icon: Zap, title: "Laser Hair Removal", slug: "laser-hair-removal", desc: "Laser-based hair reduction and skin-focused laser planning for patients who want smoother results and less dependence on frequent waxing.", detail: "Suitability is assessed according to skin tone, hair thickness, target area, and the number of sessions needed for consistent reduction." },
+  { icon: Clock, title: "Botox and Anti-Aging Treatment", slug: "botox-and-anti-aging-treatment", desc: "Natural-looking anti-aging planning for early lines, tired skin, texture changes, and preventive aesthetic care.", detail: "Botox, peels, hydration support, and skin-quality treatments are recommended conservatively to keep results refined and facial expressions balanced." },
+  { icon: Scissors, title: "Aesthetic Consultations", slug: "aesthetic-consultations", desc: "Personalized consultations for glow goals, event preparation, pigmentation correction, and doctor-guided cosmetic treatment planning.", detail: "Every recommendation is explained in clear terms so you understand the expected benefit, downtime, and maintenance before you proceed." },
 ];
 
 const services = [...skinServices.slice(0, 2), ...hairServices, ...skinServices.slice(2)];
@@ -95,12 +96,21 @@ const ServicesSection = () => {
                   aria-expanded={isExpanded}
                   className="mt-5 inline-flex items-center gap-2 font-body text-sm font-medium text-primary"
                 >
-                  <span>{isExpanded ? "Hide Details" : "Explore Treatment"}</span>
+                  <span>{isExpanded ? "Hide Details" : "Quick Look"}</span>
                   <ArrowRight
                     size={16}
                     className={`transition-transform duration-300 ${isExpanded ? "rotate-90" : "group-hover:translate-x-1"}`}
                   />
                 </button>
+
+                <Link
+                  to={`/treatments/${service.slug}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-3 flex items-center gap-2 font-body text-sm font-semibold text-foreground transition-colors hover:text-primary"
+                >
+                  <span>View Full Treatment Page</span>
+                  <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+                </Link>
               </div>
             );
           })}

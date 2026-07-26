@@ -16,6 +16,7 @@ const Admin = lazy(() => import("./pages/Admin.tsx"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin.tsx"));
 const AppointmentSection = lazy(() => import("@/components/AppointmentSection"));
 const BlogDetail = lazy(() => import("./pages/BlogDetail.tsx"));
+const TreatmentDetail = lazy(() => import("./pages/TreatmentDetail.tsx"));
 const Footer = lazy(() => import("@/components/Footer"));
 const FloatingButtons = lazy(() => import("@/components/FloatingButtons"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
@@ -77,6 +78,7 @@ const App = () => (
                 <Route key={path} path={path} element={<Index />} />
               ))}
               <Route path="/blogs/:slug" element={<BlogDetail />} />
+              <Route path="/treatments/:slug" element={<TreatmentDetail />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="*" element={<NotFound />} />
