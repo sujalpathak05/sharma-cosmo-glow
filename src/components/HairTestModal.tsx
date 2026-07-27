@@ -116,7 +116,7 @@ const joinList = (items: string[]) => (items.length > 0 ? items.join(", ") : "No
 const buildHairTestWhatsAppMessage = (
   formValues: HairTestFormValues,
   currentAssessment: HairTestAssessment | null,
-  selectedPhoto: File | null,
+  photoUrl: string | null,
 ) => {
   const normalizedPhone = normalizeIndianPhone(formValues.phone) ?? formValues.phone;
   const lines = [
@@ -145,7 +145,7 @@ const buildHairTestWhatsAppMessage = (
     `Lifestyle disease: ${joinList(formValues.lifestyleDiseases)}`,
     `Current medicine: ${formValues.currentMedicineUse || "-"}${formValues.currentMedicines ? ` - ${formValues.currentMedicines}` : ""}`,
     `Present condition: ${formValues.medicalCondition || "-"}`,
-    `Scalp/hair photo: ${selectedPhoto ? `Captured/selected (${selectedPhoto.name}) and submitted through the Hair Test form` : "Not shared"}`,
+    `Scalp/hair photo: ${photoUrl ?? "Not shared"}`,
     "",
     "Hair Test result:",
     `Likely issue: ${currentAssessment?.conditionName ?? "-"}`,
@@ -174,10 +174,11 @@ const HairTestModal = ({ open, onOpenChange }: HairTestModalProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [assessment, setAssessment] = useState<HairTestAssessment | null>(null);
+  const [submittedPhotoUrl, setSubmittedPhotoUrl] = useState<string | null>(null);
   const progress = useMemo(() => Math.round((step / TOTAL_STEPS) * 100), [step]);
   const hairTestWhatsAppMessage = useMemo(
-    () => buildHairTestWhatsAppMessage(values, assessment, photo),
-    [assessment, photo, values],
+    () => buildHairTestWhatsAppMessage(values, assessment, submittedPhotoUrl),
+    [assessment, submittedPhotoUrl, values],
   );
   const hairTestWhatsAppHref = useMemo(
     () => buildHairTestWhatsAppHref(hairTestWhatsAppMessage),
@@ -208,6 +209,7 @@ const HairTestModal = ({ open, onOpenChange }: HairTestModalProps) => {
     setSubmitting(false);
     setSubmitted(false);
     setAssessment(null);
+    setSubmittedPhotoUrl(null);
   }, [setSelectedPhoto, stopCamera]);
 
   useEffect(() => {
@@ -461,6 +463,7 @@ const HairTestModal = ({ open, onOpenChange }: HairTestModalProps) => {
     }
 
     setAssessment(result.assessment ?? nextAssessment);
+    setSubmittedPhotoUrl(result.photoUrl);
     setSubmitted(true);
     toast.success(
       result.mode === "cloud"
@@ -942,6 +945,11 @@ const HairTestModal = ({ open, onOpenChange }: HairTestModalProps) => {
                 <MessageCircle className="h-4 w-4" aria-hidden="true" />
                 Chat with our team
               </button>
+              {photo ? (
+                <p className="mt-3 font-body text-xs text-muted-foreground">
+                  Your scalp/hair photo link will be included with the WhatsApp message.
+                </p>
+              ) : null}
             </div>
           </div>
         ) : (

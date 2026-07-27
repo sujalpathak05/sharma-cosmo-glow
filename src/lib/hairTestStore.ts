@@ -379,10 +379,10 @@ export const buildHairTestAssessment = (input: HairTestFormValues): HairTestAsse
 };
 
 const uploadHairTestPhoto = async (recordId: string, photo: File | null | undefined) => {
-  if (!photo) return null;
+  if (!photo) return { path: null as string | null, publicUrl: null as string | null };
 
   const photoError = validateHairTestPhoto(photo);
-  if (photoError) return null;
+  if (photoError) return { path: null, publicUrl: null };
 
   const path = `${recordId}/${Date.now()}-${sanitizeFileName(photo.name)}`;
   const { error } = await supabase.storage.from(HAIR_TEST_PHOTO_BUCKET).upload(path, photo, {
@@ -391,7 +391,10 @@ const uploadHairTestPhoto = async (recordId: string, photo: File | null | undefi
     upsert: false,
   });
 
-  return error ? null : path;
+  if (error) return { path: null, publicUrl: null };
+
+  const { data } = supabase.storage.from(HAIR_TEST_PHOTO_BUCKET).getPublicUrl(path);
+  return { path, publicUrl: data?.publicUrl ?? null };
 };
 
 export const submitHairTest = async (input: SubmitHairTestInput) => {
@@ -442,7 +445,7 @@ export const submitHairTest = async (input: SubmitHairTestInput) => {
 
   saveLocalHairTest(baseRecord);
 
-  const photoPath = await uploadHairTestPhoto(id, input.photo);
+  const { path: photoPath, publicUrl } = await uploadHairTestPhoto(id, input.photo);
   const cloudPayload: HairTestCloudPayload = {
     ...baseRecord,
     photo_path: photoPath,
@@ -455,11 +458,11 @@ export const submitHairTest = async (input: SubmitHairTestInput) => {
     .insert(cloudPayload);
 
   if (error) {
-    return { mode: "local" as const, id, assessment };
+    return { mode: "local" as const, id, assessment, photoUrl: publicUrl };
   }
 
   removeLocalHairTest(id);
-  return { mode: "cloud" as const, id, assessment };
+  return { mode: "cloud" as const, id, assessment, photoUrl: publicUrl };
 };
 
 export const localHairTestsEventName = LOCAL_HAIR_TESTS_EVENT;
