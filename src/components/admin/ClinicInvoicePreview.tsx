@@ -1,6 +1,9 @@
-import { Printer } from "lucide-react";
+import { useRef, useState } from "react";
+import { Download, Loader2, Printer } from "lucide-react";
+import { toast } from "sonner";
 
 import { clinicBrand } from "@/lib/clinicBrand";
+import { downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import { cn } from "@/lib/utils";
 
 type InvoiceInfoRow = {
@@ -35,6 +38,7 @@ type ClinicInvoicePreviewProps = {
   summaryRows: InvoiceSummaryRow[];
   note?: string;
   onPrint?: () => void;
+  downloadable?: boolean;
 };
 
 const summaryToneClasses: Record<NonNullable<InvoiceSummaryRow["tone"]>, string> = {
@@ -61,7 +65,23 @@ const ClinicInvoicePreview = ({
   summaryRows,
   note,
   onPrint,
+  downloadable,
 }: ClinicInvoicePreviewProps) => {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!sectionRef.current || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await downloadInvoicePdf(sectionRef.current, invoiceNo);
+    } catch {
+      toast.error("Unable to download bill PDF.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const handlePrint = () => {
     if (typeof document === "undefined" || typeof window === "undefined") {
       onPrint?.();
@@ -208,7 +228,7 @@ const ClinicInvoicePreview = ({
   };
 
   return (
-    <section className="print-bill-area rounded-[34px] border border-[#ead7b0] bg-white p-5 shadow-[0_28px_60px_-42px_rgba(77,53,14,0.35)] print:rounded-none print:border-none print:p-0 print:shadow-none sm:p-7">
+    <section ref={sectionRef} data-invoice-no={invoiceNo} className="print-bill-area rounded-[34px] border border-[#ead7b0] bg-white p-5 shadow-[0_28px_60px_-42px_rgba(77,53,14,0.35)] print:rounded-none print:border-none print:p-0 print:shadow-none sm:p-7">
       <div className="invoice-shell rounded-[28px] border border-[#f4e4c2] bg-[linear-gradient(180deg,#fffefb_0%,#fff7ea_100%)] p-5 print:border-none print:bg-white print:p-0 sm:p-7">
         <div className="invoice-header flex flex-col gap-5 border-b border-[#ead7b0] pb-5 print:pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -248,6 +268,16 @@ const ClinicInvoicePreview = ({
               >
                 <Printer className="h-4 w-4" />
                 Print Bill
+              </button>
+            ) : null}
+            {downloadable ? (
+              <button
+                onClick={() => void handleDownload()}
+                disabled={isDownloading}
+                className="print-hidden ml-2 inline-flex items-center gap-2 rounded-full bg-[#5a49d6] px-4 py-2 text-sm font-medium text-white disabled:opacity-60 print:hidden"
+              >
+                {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Download PDF
               </button>
             ) : null}
           </div>

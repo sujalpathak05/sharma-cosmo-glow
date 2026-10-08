@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { CalendarDays, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { CalendarDays, Download, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
@@ -20,6 +20,7 @@ import {
 } from "@/lib/clinicAdminStore";
 import type { AppointmentRecord } from "@/lib/appointmentStore";
 import { clinicBrand } from "@/lib/clinicBrand";
+import { downloadInvoicePdf } from "@/lib/downloadInvoicePdf";
 import { cn } from "@/lib/utils";
 
 type PharmacyPanelProps = {
@@ -108,6 +109,7 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
   });
   const [purchaseForm, setPurchaseForm] = useState({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid" as "paid" | "partial" | "due", items: [createItemRow()] });
   const [selectedSalesDate, setSelectedSalesDate] = useState(toDateKey());
+  const [pendingDownload, setPendingDownload] = useState<{ id: string; invoiceNo: string } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -135,6 +137,24 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!pendingDownload || view !== "sales" || selectedSaleId !== pendingDownload.id) return;
+    const timer = window.setTimeout(async () => {
+      const element = document.querySelector<HTMLElement>(`.print-bill-area[data-invoice-no="${pendingDownload.invoiceNo}"]`);
+      setPendingDownload(null);
+      if (!element) {
+        toast.error("Unable to find bill for download.");
+        return;
+      }
+      try {
+        await downloadInvoicePdf(element, pendingDownload.invoiceNo);
+      } catch {
+        toast.error("Unable to download bill PDF.");
+      }
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [pendingDownload, view, selectedSaleId]);
 
   const term = search.trim().toLowerCase();
   const filteredMedicines = data.pharmacyMedicines.filter((medicine) => !term || [medicine.name, medicine.generic, medicine.batch].some((value) => value.toLowerCase().includes(term)));
@@ -360,6 +380,12 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
     }
   };
 
+  const downloadSale = (invoice: PharmacySaleInvoice) => {
+    setSelectedSaleId(invoice.id);
+    setView("sales");
+    setPendingDownload({ id: invoice.id, invoiceNo: invoice.invoiceNo });
+  };
+
   const renderItemEditor = (type: "sale" | "purchase", rows: ItemRow[]) => (
     <div className="space-y-3">
       {rows.map((row, index) => {
@@ -564,6 +590,14 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
                       >
                         View
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => downloadSale(invoice)}
+                        className="inline-flex items-center gap-1 rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6]"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Download
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -723,13 +757,16 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
                       {invoice.paymentStatus === "due" ? "Mark Paid" : "Mark Due"}
                     </button>
                   </div>
-                  <button onClick={() => setSelectedSaleId(invoice.id)} className="rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6]">View</button>
+                  <div className="flex flex-col gap-1.5">
+                    <button onClick={() => setSelectedSaleId(invoice.id)} className="rounded-full border border-[#d8ccff] bg-white px-3 py-1.5 text-xs font-medium text-[#5a49d6]">View</button>
+                    <button onClick={() => downloadSale(invoice)} title="Download PDF" className="inline-flex items-center justify-center gap-1 rounded-full bg-[#5a49d6] px-3 py-1.5 text-xs font-medium text-white"><Download className="h-3.5 w-3.5" />PDF</button>
+                  </div>
                 </div>
               )) : <div className="px-4 py-8 text-sm text-muted-foreground">No sales records yet. Start by creating the first pharmacy bill.</div>}
             </div>
           </Surface>
 
-          {selectedSale ? <ClinicInvoicePreview badge="Pharmacy Invoice Preview" title="Sales Bill" invoiceNo={selectedSale.invoiceNo} invoiceDate={formatDate(selectedSale.date)} status={selectedSale.paymentStatus} patientRows={[{ label: "Patient Name", value: selectedSale.patientName }, { label: "Patient ID", value: selectedSale.patientId }, { label: "Phone", value: selectedSale.contactNo }, { label: "Sale Type", value: selectedSale.type }]} billingRows={[{ label: "Clinic", value: clinicBrand.name }, { label: "Department", value: "Pharmacy / Sales Desk" }, { label: "Address", value: clinicBrand.address }, { label: "Doctor", value: clinicBrand.doctorName }]} items={selectedSale.items.map((item) => ({ id: `${selectedSale.id}-${item.medicineId}`, label: item.name, meta: "Medicine / pharmacy dispensed item", qty: item.qty, rate: formatMoney(item.price), total: formatMoney(item.qty * item.price) }))} summaryRows={[{ label: "Subtotal", value: formatMoney(selectedSale.items.reduce((sum, item) => sum + item.qty * item.price, 0)) }, { label: `Discount (${formatPercent(selectedSale.discountPercent)})`, value: formatMoney(selectedSale.discount) }, { label: selectedSale.paymentStatus === "due" ? "Outstanding" : "Paid Amount", value: formatMoney(selectedSale.totalAmount), tone: selectedSale.paymentStatus === "due" ? "warning" : "success" }, { label: "Grand Total", value: formatMoney(selectedSale.totalAmount) }]} note="This pharmacy bill is issued by Sharma Cosmo Clinic. Medicines once dispensed should be checked immediately at the counter." onPrint={() => window.print()} /> : null}
+          {selectedSale ? <ClinicInvoicePreview badge="Pharmacy Invoice Preview" title="Sales Bill" invoiceNo={selectedSale.invoiceNo} invoiceDate={formatDate(selectedSale.date)} status={selectedSale.paymentStatus} patientRows={[{ label: "Patient Name", value: selectedSale.patientName }, { label: "Patient ID", value: selectedSale.patientId }, { label: "Phone", value: selectedSale.contactNo }, { label: "Sale Type", value: selectedSale.type }]} billingRows={[{ label: "Clinic", value: clinicBrand.name }, { label: "Department", value: "Pharmacy / Sales Desk" }, { label: "Address", value: clinicBrand.address }, { label: "Doctor", value: clinicBrand.doctorName }]} items={selectedSale.items.map((item) => ({ id: `${selectedSale.id}-${item.medicineId}`, label: item.name, meta: "Medicine / pharmacy dispensed item", qty: item.qty, rate: formatMoney(item.price), total: formatMoney(item.qty * item.price) }))} summaryRows={[{ label: "Subtotal", value: formatMoney(selectedSale.items.reduce((sum, item) => sum + item.qty * item.price, 0)) }, { label: `Discount (${formatPercent(selectedSale.discountPercent)})`, value: formatMoney(selectedSale.discount) }, { label: selectedSale.paymentStatus === "due" ? "Outstanding" : "Paid Amount", value: formatMoney(selectedSale.totalAmount), tone: selectedSale.paymentStatus === "due" ? "warning" : "success" }, { label: "Grand Total", value: formatMoney(selectedSale.totalAmount) }]} note="This pharmacy bill is issued by Sharma Cosmo Clinic. Medicines once dispensed should be checked immediately at the counter." onPrint={() => window.print()} downloadable /> : null}
         </div>
       ) : null}
 
