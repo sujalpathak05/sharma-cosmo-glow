@@ -3,6 +3,8 @@ import { CalendarDays, Download, Pencil, Plus, Search, Trash2 } from "lucide-rea
 import { toast } from "sonner";
 
 import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
+import MedicinePicker from "@/components/admin/MedicinePicker";
+import PharmacySalesReport from "@/components/admin/PharmacySalesReport";
 import {
   addPharmacyMedicine,
   addPharmacyPurchaseInvoice,
@@ -27,8 +29,18 @@ type PharmacyPanelProps = {
   appointments: AppointmentRecord[];
 };
 
-type PharmacyView = "dashboard" | "masters" | "stock" | "sales" | "purchase" | "reports";
-type ItemRow = { key: string; medicineId: string; medicineSearch: string; medicineSearchApplied: string; qty: string; price: string };
+type PharmacyView = "dashboard" | "masters" | "stock" | "sales" | "salesReport" | "purchase" | "reports";
+
+const viewTabs: Array<{ key: PharmacyView; label: string }> = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "masters", label: "Masters" },
+  { key: "stock", label: "Stock" },
+  { key: "sales", label: "Sales" },
+  { key: "salesReport", label: "Sales Report" },
+  { key: "purchase", label: "Purchase" },
+  { key: "reports", label: "Expiry Report" },
+];
+type ItemRow = { key: string; medicineId: string; qty: string; price: string };
 type MedicineFormState = {
   name: string;
   generic: string;
@@ -55,13 +67,11 @@ const normalizeDateKey = (value: string) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : toDateKey(date);
 };
-const createItemRow = (): ItemRow => ({
+const createItemRow = (medicine: PharmacyMedicine): ItemRow => ({
   key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-  medicineId: "",
-  medicineSearch: "",
-  medicineSearchApplied: "",
+  medicineId: medicine.id,
   qty: "1",
-  price: "",
+  price: String(medicine.unitPrice),
 });
 const emptyMedicineForm = (): MedicineFormState => ({ name: "", generic: "", group: "", manufacturer: "", batch: "", expiryDate: "", stock: "", location: "", unitPrice: "" });
 const mapMedicineToForm = (medicine: PharmacyMedicine): MedicineFormState => ({
@@ -105,9 +115,9 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
     type: "OTC" as "OPD" | "OTC",
     paymentStatus: "paid" as PharmacySaleInvoice["paymentStatus"],
     discountPercent: 0,
-    items: [createItemRow()],
+    items: [] as ItemRow[],
   });
-  const [purchaseForm, setPurchaseForm] = useState({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid" as "paid" | "partial" | "due", items: [createItemRow()] });
+  const [purchaseForm, setPurchaseForm] = useState({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid" as "paid" | "partial" | "due", items: [] as ItemRow[] });
   const [selectedSalesDate, setSelectedSalesDate] = useState(toDateKey());
   const [pendingDownload, setPendingDownload] = useState<{ id: string; invoiceNo: string } | null>(null);
 
@@ -214,8 +224,8 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
     setEditingMedicineId(null);
     setMedicineForm(emptyMedicineForm());
   };
-  const resetSaleForm = () => setSaleForm({ patientName: "", contactNo: "", date: toDateKey(), type: "OTC", paymentStatus: "paid", discountPercent: 0, items: [createItemRow()] });
-  const resetPurchaseForm = () => setPurchaseForm({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid", items: [createItemRow()] });
+  const resetSaleForm = () => setSaleForm({ patientName: "", contactNo: "", date: toDateKey(), type: "OTC", paymentStatus: "paid", discountPercent: 0, items: [] });
+  const resetPurchaseForm = () => setPurchaseForm({ supplierId: "", supplierName: "", contactNo: "", date: new Date().toISOString().slice(0, 10), paymentStatus: "paid", items: [] });
 
   const updateRows = (type: "sale" | "purchase", key: string, patch: Partial<ItemRow>) => {
     if (type === "sale") {
@@ -225,20 +235,29 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
     setPurchaseForm((current) => ({ ...current, items: current.items.map((item) => (item.key === key ? { ...item, ...patch } : item)) }));
   };
 
-  const addRow = (type: "sale" | "purchase") => {
-    if (type === "sale") {
-      setSaleForm((current) => ({ ...current, items: [...current.items, createItemRow()] }));
+  const addMedicineToBill = (type: "sale" | "purchase", medicine: PharmacyMedicine) => {
+    const rows = type === "sale" ? saleForm.items : purchaseForm.items;
+    const existing = rows.find((item) => item.medicineId === medicine.id);
+    if (type === "sale" && existing && (Number(existing.qty) || 1) + 1 > medicine.stock) {
+      toast.error(`${medicine.name} has only ${medicine.stock} units available.`);
       return;
     }
-    setPurchaseForm((current) => ({ ...current, items: [...current.items, createItemRow()] }));
+    const nextRows = existing
+      ? rows.map((item) => (item.key === existing.key ? { ...item, qty: String((Number(item.qty) || 1) + 1) } : item))
+      : [...rows, createItemRow(medicine)];
+    if (type === "sale") {
+      setSaleForm((current) => ({ ...current, items: nextRows }));
+      return;
+    }
+    setPurchaseForm((current) => ({ ...current, items: nextRows }));
   };
 
   const removeRow = (type: "sale" | "purchase", key: string) => {
     if (type === "sale") {
-      setSaleForm((current) => ({ ...current, items: current.items.length > 1 ? current.items.filter((item) => item.key !== key) : [createItemRow()] }));
+      setSaleForm((current) => ({ ...current, items: current.items.filter((item) => item.key !== key) }));
       return;
     }
-    setPurchaseForm((current) => ({ ...current, items: current.items.length > 1 ? current.items.filter((item) => item.key !== key) : [createItemRow()] }));
+    setPurchaseForm((current) => ({ ...current, items: current.items.filter((item) => item.key !== key) }));
   };
 
   const saveMedicine = async () => {
@@ -388,83 +407,59 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
 
   const renderItemEditor = (type: "sale" | "purchase", rows: ItemRow[]) => (
     <div className="space-y-3">
-      {rows.map((row, index) => {
-        const selectedMedicine = data.pharmacyMedicines.find((item) => item.id === row.medicineId);
-        const medicineSearchTerm = row.medicineSearchApplied.trim().toLowerCase();
-        const medicineOptions = data.pharmacyMedicines.filter((item) => !medicineSearchTerm || [item.name, item.generic, item.batch].some((value) => value.toLowerCase().includes(medicineSearchTerm)));
-        const qty = Math.max(1, Number(row.qty) || 1);
-        const price = type === "sale" ? selectedMedicine?.unitPrice || 0 : Math.max(0, Number(row.price) || 0);
-        const lineTotal = qty * price;
+      <MedicinePicker
+        medicines={data.pharmacyMedicines}
+        selectedIds={rows.map((row) => row.medicineId)}
+        blockOutOfStock={type === "sale"}
+        onPick={(medicine) => addMedicineToBill(type, medicine)}
+      />
+      {rows.length === 0 ? (
+        <div className="rounded-[20px] border border-dashed border-[#d8ccff] bg-[#fbf9ff] px-4 py-6 text-center text-sm text-muted-foreground">
+          Upar search karke medicine select karein — row apne aap add ho jayegi.
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-[20px] border border-[#eadfc8] bg-[#fffaf1]">
+          <div className="hidden grid-cols-[1.4fr,0.8fr,0.6fr,0.6fr,auto] gap-3 border-b border-[#eadfc8] px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground md:grid">
+            <span>Medicine</span>
+            <span>Qty</span>
+            <span>Rate</span>
+            <span>Total</span>
+            <span className="w-[72px]" />
+          </div>
+          {rows.map((row, index) => {
+            const medicine = data.pharmacyMedicines.find((item) => item.id === row.medicineId);
+            const qty = Math.max(1, Number(row.qty) || 1);
+            const price = type === "sale" ? medicine?.unitPrice || 0 : Math.max(0, Number(row.price) || 0);
+            const overStock = type === "sale" && medicine ? qty > medicine.stock : false;
 
-        return (
-          <div key={row.key} className={cn("grid gap-4 rounded-[20px] border border-[#eadfc8] bg-[#fffaf1] p-4", type === "sale" ? "md:grid-cols-[1.3fr,0.55fr,0.7fr,auto]" : "md:grid-cols-[1.15fr,0.5fr,0.6fr,auto]")}>
-            <label className="text-sm font-medium text-foreground">
-              Medicine {index + 1}
-              <div className="mt-2 flex gap-2">
-                <input
-                  type="text"
-                  value={row.medicineSearch}
-                  onChange={(event) => updateRows(type, row.key, { medicineSearch: event.target.value })}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      updateRows(type, row.key, { medicineSearchApplied: row.medicineSearch });
-                    }
-                  }}
-                  placeholder="Search by name, generic or batch"
-                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => updateRows(type, row.key, { medicineSearchApplied: row.medicineSearch })}
-                  className="inline-flex items-center gap-1 rounded-xl border border-[#d8ccff] bg-white px-3 text-xs font-medium text-[#5a49d6] transition hover:bg-[#f5f1ff]"
-                >
-                  <Search className="h-3.5 w-3.5" />
-                  Search
+            return (
+              <div key={row.key} className="grid items-center gap-3 border-b border-[#f3ead8] px-4 py-3 text-sm last:border-b-0 md:grid-cols-[1.4fr,0.8fr,0.6fr,0.6fr,auto]">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">{index + 1}. {medicine?.name ?? "Medicine removed from master"}</p>
+                  <p className={cn("text-xs", overStock ? "font-medium text-rose-600" : "text-muted-foreground")}>
+                    {medicine ? `Batch ${medicine.batch} • Stock ${medicine.stock}${overStock ? " — stock se zyada qty" : ""}` : "-"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button type="button" onClick={() => updateRows(type, row.key, { qty: String(Math.max(1, qty - 1)) })} className="h-8 w-8 rounded-full border border-[#d8ccff] bg-white font-semibold text-[#5a49d6]" aria-label="Decrease quantity">−</button>
+                  <input type="number" min="1" value={row.qty} onChange={(event) => updateRows(type, row.key, { qty: event.target.value })} className="w-16 rounded-xl border border-border bg-background px-2 py-1.5 text-center text-sm outline-none" aria-label="Quantity" />
+                  <button type="button" onClick={() => updateRows(type, row.key, { qty: String(qty + 1) })} className="h-8 w-8 rounded-full border border-[#d8ccff] bg-white font-semibold text-[#5a49d6]" aria-label="Increase quantity">+</button>
+                </div>
+                {type === "purchase" ? (
+                  <input type="number" min="0" value={row.price} onChange={(event) => updateRows(type, row.key, { price: event.target.value })} className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-sm outline-none" aria-label="Rate" />
+                ) : (
+                  <span className="text-muted-foreground">{formatMoney(price)}</span>
+                )}
+                <span className="font-semibold text-foreground">{formatMoney(qty * price)}</span>
+                <button type="button" onClick={() => removeRow(type, row.key)} className="inline-flex w-[72px] items-center justify-center gap-1 rounded-full border border-rose-200 bg-white px-2 py-1.5 text-xs font-medium text-rose-700">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Hatao
                 </button>
               </div>
-              <select
-                value={row.medicineId}
-                onChange={(event) => {
-                  const medicine = data.pharmacyMedicines.find((item) => item.id === event.target.value);
-                  updateRows(type, row.key, {
-                    medicineId: event.target.value,
-                    medicineSearch: medicine ? medicine.name : "",
-                    medicineSearchApplied: medicine ? medicine.name : "",
-                    ...(type === "purchase" ? { price: medicine ? String(medicine.unitPrice) : row.price } : {}),
-                  });
-                }}
-                className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none"
-              >
-                <option value="">Select medicine</option>
-                {medicineOptions.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.stock} in stock)</option>)}
-              </select>
-              {medicineOptions.length === 0 && medicineSearchTerm ? <p className="mt-1 text-xs text-muted-foreground">No medicine found for this search.</p> : null}
-            </label>
-            <label className="text-sm font-medium text-foreground">
-              Qty
-              <input type="number" min="1" value={row.qty} onChange={(event) => updateRows(type, row.key, { qty: event.target.value })} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" />
-            </label>
-            {type === "purchase" ? (
-              <label className="text-sm font-medium text-foreground">
-                Rate
-                <input type="number" min="0" value={row.price} onChange={(event) => updateRows(type, row.key, { price: event.target.value })} className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none" />
-              </label>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">Line total</p>
-                <p className="mt-2">{selectedMedicine ? formatMoney(lineTotal) : "-"}</p>
-                <p className="mt-1 text-xs">{selectedMedicine ? `Stock left: ${selectedMedicine.stock}` : "Choose medicine"}</p>
-              </div>
-            )}
-            <div className="flex items-end gap-2">
-              {type === "purchase" ? <div className="min-w-[92px] rounded-[18px] bg-white px-3 py-3 text-sm"><p className="font-medium text-foreground">Total</p><p className="mt-1">{selectedMedicine ? formatMoney(lineTotal) : "-"}</p></div> : null}
-              <button type="button" onClick={() => addRow(type)} className="rounded-full border border-[#d8ccff] bg-white px-3 py-2 text-xs font-medium text-[#5a49d6]">Add row</button>
-              <button type="button" onClick={() => removeRow(type, row.key)} className="rounded-full border border-rose-200 bg-white px-3 py-2 text-xs font-medium text-rose-700">Remove</button>
-            </div>
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 
@@ -484,8 +479,8 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
       </section>
 
       <div className="flex flex-wrap gap-2">
-        {(["dashboard", "masters", "stock", "sales", "purchase", "reports"] as const).map((key) => (
-          <button key={key} onClick={() => setView(key)} className={cn("rounded-full border px-4 py-2 text-sm font-medium transition", view === key ? "border-[#5a49d6] bg-[#5a49d6] text-white" : "border-[#eadfc8] bg-[#fffaf1] text-muted-foreground hover:text-foreground")}>{key[0].toUpperCase() + key.slice(1)}</button>
+        {viewTabs.map(({ key, label }) => (
+          <button key={key} onClick={() => setView(key)} className={cn("rounded-full border px-4 py-2 text-sm font-medium transition", view === key ? "border-[#5a49d6] bg-[#5a49d6] text-white" : "border-[#eadfc8] bg-[#fffaf1] text-muted-foreground hover:text-foreground")}>{label}</button>
         ))}
       </div>
 
@@ -768,6 +763,17 @@ const PharmacyPanel = ({ appointments }: PharmacyPanelProps) => {
 
           {selectedSale ? <ClinicInvoicePreview badge="Pharmacy Invoice Preview" title="Sales Bill" invoiceNo={selectedSale.invoiceNo} invoiceDate={formatDate(selectedSale.date)} status={selectedSale.paymentStatus} patientRows={[{ label: "Patient Name", value: selectedSale.patientName }, { label: "Patient ID", value: selectedSale.patientId }, { label: "Phone", value: selectedSale.contactNo }, { label: "Sale Type", value: selectedSale.type }]} billingRows={[{ label: "Clinic", value: clinicBrand.name }, { label: "Department", value: "Pharmacy / Sales Desk" }, { label: "Address", value: clinicBrand.address }, { label: "Doctor", value: clinicBrand.doctorName }]} items={selectedSale.items.map((item) => ({ id: `${selectedSale.id}-${item.medicineId}`, label: item.name, meta: "Medicine / pharmacy dispensed item", qty: item.qty, rate: formatMoney(item.price), total: formatMoney(item.qty * item.price) }))} summaryRows={[{ label: "Subtotal", value: formatMoney(selectedSale.items.reduce((sum, item) => sum + item.qty * item.price, 0)) }, { label: `Discount (${formatPercent(selectedSale.discountPercent)})`, value: formatMoney(selectedSale.discount) }, { label: selectedSale.paymentStatus === "due" ? "Outstanding" : "Paid Amount", value: formatMoney(selectedSale.totalAmount), tone: selectedSale.paymentStatus === "due" ? "warning" : "success" }, { label: "Grand Total", value: formatMoney(selectedSale.totalAmount) }]} note="This pharmacy bill is issued by Sharma Cosmo Clinic. Medicines once dispensed should be checked immediately at the counter." onPrint={() => window.print()} downloadable /> : null}
         </div>
+      ) : null}
+
+      {view === "salesReport" ? (
+        <PharmacySalesReport
+          sales={data.pharmacySales}
+          onViewInvoice={(invoice) => {
+            setSelectedSaleId(invoice.id);
+            setView("sales");
+          }}
+          onDownloadInvoice={downloadSale}
+        />
       ) : null}
 
       {view === "purchase" ? (

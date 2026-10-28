@@ -3,6 +3,7 @@ import { CalendarClock, Download, Edit3, Plus, ReceiptText } from "lucide-react"
 import { toast } from "sonner";
 
 import ClinicInvoicePreview from "@/components/admin/ClinicInvoicePreview";
+import OpdDailyReport from "@/components/admin/OpdDailyReport";
 import {
   type PaymentMode,
   type OpdBill,
@@ -679,6 +680,15 @@ const OpdBillingPanel = ({ appointments, initialAppointmentId, onConsumeInitial 
           </section>
         </div>
       </div>
+
+      <OpdDailyReport
+        appointments={appointments}
+        bills={data.opdBills}
+        onOpenBill={(bill) => {
+          loadBillIntoDraft(bill);
+          window.setTimeout(() => document.querySelector(".print-bill-area")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+        }}
+      />
     </div>
   );
 };
